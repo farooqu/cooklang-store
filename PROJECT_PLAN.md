@@ -2,25 +2,45 @@
 
 ## Phase 1: Foundation & Technology Selection
 
-### Decisions Needed
-- [ ] Choose programming language (Go, Rust, Node.js, Python)
-- [ ] Select database system (PostgreSQL, SQLite, MongoDB)
-- [ ] Decide on API style (REST vs GraphQL)
-- [ ] Choose authentication method (JWT, sessions, OAuth)
-- [ ] Determine deployment strategy (Docker, serverless, traditional)
+### Architectural Decisions Made
 
-### Considerations
+✅ **Storage Model**: Git repository as source of truth
+- Recipe files stored as `.cook` files in a git repository
+- All API changes (create/update/delete) persist to git with commits
+- Enables version history, branching, and collaboration
+- Users can edit recipes directly via git or use the API
 
-**Language Options:**
-- **Go**: Fast, simple deployment, great for APIs
-- **Rust**: Maximum performance, memory safety, steeper learning curve
-- **Node.js**: Large ecosystem, easy to find developers, good for real-time features
-- **Python**: Rapid development, great libraries, slower runtime
+✅ **Deployment**: Docker-based for self-hosting
+- Primary audience: users self-hosting for themselves and family
+- Simple Docker deployment with docker-compose
+- Minimal configuration required
 
-**Database Options:**
-- **PostgreSQL**: Robust, full-featured, great for complex queries
-- **SQLite**: Simple, file-based, good for self-hosted/embedded scenarios
-- **MongoDB**: Flexible schema, good for document storage
+✅ **Language & Parser**: Rust with `cooklang-rs`
+- Using official canonical CookLang parser from cooklang.org
+- Rust offers performance, safety, and single binary deployment
+- Parser libraries available: `cooklang-rs` (Rust), `cooklang-kotlin` (Kotlin)
+
+✅ **Metadata Storage**: SQLite
+- Lightweight, file-based database perfect for self-hosting
+- Fast search indexing for recipes
+- No separate database server needed
+
+✅ **API Style**: REST
+- Simple, well-understood, and widely supported
+- Easy for self-hosted users to integrate
+
+✅ **Web Framework**: Axum
+- Modern, fast async framework built on tokio
+- Excellent ergonomics and type safety
+- Good ecosystem integration
+
+✅ **Authentication**: JWT tokens
+- Stateless authentication perfect for REST APIs
+- Simple for self-hosted scenarios
+- Easy to implement and understand
+
+### Phase 1 Complete ✅
+All architectural decisions made. Ready for implementation.
 
 ## Phase 2: Core Recipe Engine
 

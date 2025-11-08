@@ -4,15 +4,31 @@ This document provides coding conventions, project structure, and common command
 
 ## Project Overview
 
-A backend service for managing CookLang recipe files. CookLang is a markup language for recipes that makes them easy to read, write, and parse.
+A self-hosted backend service for managing CookLang recipe files. CookLang is a markup language for recipes that makes them easy to read, write, and parse.
+
+**Target Audience**: Users self-hosting for themselves and their family.
+
+## Key Architectural Decisions
+
+### Git as Source of Truth
+- Recipe files (`.cook` format) are stored in a git repository
+- All API operations (create/update/delete) commit changes to git
+- Provides version history, branching, and collaboration capabilities
+- Users can edit recipes via API or directly in git
+
+### Deployment Model
+- Docker-based deployment with docker-compose
+- Designed for simple self-hosting scenarios
+- Minimal configuration required
 
 ## Technology Stack
 
-**To be determined** - Consider:
-- Language: Go, Rust, Node.js, or Python
-- Database: PostgreSQL, SQLite, or MongoDB
-- API: REST or GraphQL
-- Storage: File system or object storage for recipe files
+**Selected**:
+- Language: **Rust** (use official `cooklang-rs` parser library)
+- Parser: **cooklang-rs** (canonical CookLang parser from cooklang.org)
+- Metadata DB: **SQLite** (lightweight, file-based, perfect for self-hosting)
+- API: **REST** (simple, well-understood)
+- Storage: **Git repository** for recipe files + SQLite for search index/metadata
 
 ## Code Conventions
 
@@ -64,14 +80,24 @@ A backend service for managing CookLang recipe files. CookLang is a markup langu
 
 ## Common Commands
 
-*To be added once tech stack is chosen*
+### Development
+- **Build**: `cargo build`
+- **Run dev server**: `cargo run`
+- **Test**: `cargo test`
+- **Test with output**: `cargo test -- --nocapture`
+- **Lint**: `cargo clippy`
+- **Format**: `cargo fmt`
+- **Check without building**: `cargo check`
 
-Examples:
-- Build: `TBD`
-- Test: `TBD`
-- Lint: `TBD`
-- Run dev server: `TBD`
-- Run production: `TBD`
+### Production
+- **Build release**: `cargo build --release`
+- **Run with Docker**: `docker-compose up -d`
+- **View logs**: `docker-compose logs -f`
+- **Stop**: `docker-compose down`
+
+### Database
+- **Run migrations**: `sqlx migrate run`
+- **Create migration**: `sqlx migrate add <name>`
 
 ## Development Workflow
 

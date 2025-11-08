@@ -1,7 +1,12 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
 # Dependencies
 node_modules/
 vendor/
-target/
 __pycache__/
 *.pyc
 *.pyo
