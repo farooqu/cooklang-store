@@ -3,6 +3,10 @@ name = "cooklang-backend"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "cooklang_backend"
+path = "src/lib.rs"
+
 [dependencies]
 # Web framework
 axum = "0.7"

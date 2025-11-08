@@ -46,12 +46,11 @@ All architectural decisions made. Ready for implementation.
 
 ### Milestones
 
-#### Milestone 2.1: CookLang Parser Integration
-- Integrate `cooklang` crate (v0.6) parser
-- Create wrapper/adapter layer for recipe parsing
-- Extract ingredients, cookware, timers, metadata, comments
-- Handle parsing errors gracefully with user-friendly messages
-- Unit tests for parser integration and edge cases
+#### Milestone 2.1: CookLang Parser Integration ✅ (Completed Nov 8, 2025)
+- ✅ Integrate `cooklang` crate (v0.6) parser
+- ✅ Use cooklang types directly (ScalableRecipe, Ingredient, etc.)
+- ✅ Simple parse_recipe() helper function with error handling
+- ✅ Unit tests verifying parser integration works correctly
 
 #### Milestone 2.2: Recipe Storage (Git + SQLite)
 - Design SQLite schema for recipe metadata and search index

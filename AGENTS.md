@@ -8,6 +8,8 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 
 **Target Audience**: Users self-hosting for themselves and their family.
 
+**Design Philosophy**: Keep it minimal. Use the official cooklang crate directly without unnecessary wrapper layers.
+
 ## Key Architectural Decisions
 
 ### Git as Source of Truth
@@ -85,6 +87,7 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - **Run dev server**: `cargo run`
 - **Test**: `cargo test`
 - **Test with output**: `cargo test -- --nocapture`
+- **Test specific module**: `cargo test parser`
 - **Lint**: `cargo clippy`
 - **Format**: `cargo fmt`
 - **Check without building**: `cargo check`
