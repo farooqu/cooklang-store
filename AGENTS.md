@@ -117,6 +117,16 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Get explicit approval before writing code
 - This prevents rework and keeps the codebase coherent
 
+**CRITICAL: Question Every Technology Choice**:
+- For each major technology decision (databases, caches, frameworks, etc.), explicitly ask:
+  - **"Is this actually needed?"** - Challenge assumptions
+  - **"What's the simplest solution?"** - Align with "minimal" philosophy
+  - **"What are the trade-offs?"** - Deployment complexity, code complexity, operational burden
+  - **"Are there simpler alternatives?"** - In-memory vs SQLite, async vs sync, etc.
+- Self-hosted family scenario: prefer simple, zero-config solutions over feature-rich ones
+- If a technology adds complexity without clear benefit, propose something simpler
+- This applies to architecture AND specific implementation choices
+
 **When implementing features**:
 1. Create feature branch from `main`
 2. Write tests first (TDD approach)
