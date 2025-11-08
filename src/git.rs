@@ -15,13 +15,31 @@ pub fn init_repo(path: &Path) -> Result<Repository> {
 }
 
 /// Get or create the default git signature for commits
-fn get_signature() -> Result<Signature<'static>> {
+fn get_default_signature() -> Result<Signature<'static>> {
     Signature::now("CookLang Backend", "backend@cooklang.local")
         .context("Failed to create git signature")
 }
 
+/// Create a git signature with a specific author name
+fn get_signature_with_author(author: &str) -> Result<Signature<'_>> {
+    Signature::now(author, "backend@cooklang.local").context(format!(
+        "Failed to create git signature for author: {}",
+        author
+    ))
+}
+
 /// Commit a single file to the repository
 pub fn commit_file(repo: &Repository, rel_path: &str, message: &str) -> Result<git2::Oid> {
+    commit_file_with_author(repo, rel_path, message, None)
+}
+
+/// Commit a single file with an optional author
+pub fn commit_file_with_author(
+    repo: &Repository,
+    rel_path: &str,
+    message: &str,
+    author: Option<&str>,
+) -> Result<git2::Oid> {
     let mut index = repo.index()?;
     index.add_path(Path::new(rel_path))?;
     index.write()?;
@@ -29,7 +47,12 @@ pub fn commit_file(repo: &Repository, rel_path: &str, message: &str) -> Result<g
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    let signature = get_signature()?;
+    let signature = if let Some(author_name) = author {
+        get_signature_with_author(author_name)?
+    } else {
+        get_default_signature()?
+    };
+
     let parent_commit = match repo.head() {
         Ok(head) => {
             let commit = head.peel_to_commit()?;
@@ -56,6 +79,16 @@ pub fn commit_file(repo: &Repository, rel_path: &str, message: &str) -> Result<g
 
 /// Delete a file and commit the deletion
 pub fn delete_file(repo: &Repository, rel_path: &str, message: &str) -> Result<git2::Oid> {
+    delete_file_with_author(repo, rel_path, message, None)
+}
+
+/// Delete a file and commit the deletion with an optional author
+pub fn delete_file_with_author(
+    repo: &Repository,
+    rel_path: &str,
+    message: &str,
+    author: Option<&str>,
+) -> Result<git2::Oid> {
     let file_path = repo
         .workdir()
         .context("Repository has no working directory")?
@@ -72,7 +105,12 @@ pub fn delete_file(repo: &Repository, rel_path: &str, message: &str) -> Result<g
     let tree_id = index.write_tree()?;
     let tree = repo.find_tree(tree_id)?;
 
-    let signature = get_signature()?;
+    let signature = if let Some(author_name) = author {
+        get_signature_with_author(author_name)?
+    } else {
+        get_default_signature()?
+    };
+
     let parent_commit = repo.head()?.peel_to_commit()?;
 
     let oid = repo.commit(
@@ -164,6 +202,70 @@ mod tests {
         // Commit it
         let oid = commit_file(&repo, "test.cook", "Add test recipe")?;
         assert!(!oid.is_zero());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_commit_file_with_author() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let repo_path = temp_dir.path().join("recipes");
+        let repo = init_repo(&repo_path)?;
+
+        // Write a test file
+        let test_file = repo_path.join("test.cook");
+        std::fs::write(&test_file, "# Test Recipe")?;
+
+        // Commit with author
+        let oid = commit_file_with_author(&repo, "test.cook", "Add test recipe", Some("Alice"))?;
+        assert!(!oid.is_zero());
+
+        // Verify the commit has the correct author
+        let commit = repo.find_commit(oid)?;
+        let author = commit.author();
+        assert_eq!(author.name(), Some("Alice"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_file() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let repo_path = temp_dir.path().join("recipes");
+        let repo = init_repo(&repo_path)?;
+
+        // Write and commit a test file
+        let test_file = repo_path.join("test.cook");
+        std::fs::write(&test_file, "# Test Recipe")?;
+        commit_file(&repo, "test.cook", "Add test recipe")?;
+
+        // Delete it
+        let oid = delete_file(&repo, "test.cook", "Delete test recipe")?;
+        assert!(!oid.is_zero());
+        assert!(!test_file.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_file_with_author() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let repo_path = temp_dir.path().join("recipes");
+        let repo = init_repo(&repo_path)?;
+
+        // Write and commit a test file
+        let test_file = repo_path.join("test.cook");
+        std::fs::write(&test_file, "# Test Recipe")?;
+        commit_file(&repo, "test.cook", "Add test recipe")?;
+
+        // Delete with author
+        let oid = delete_file_with_author(&repo, "test.cook", "Delete test recipe", Some("Bob"))?;
+        assert!(!oid.is_zero());
+
+        // Verify the commit has the correct author
+        let commit = repo.find_commit(oid)?;
+        let author = commit.author();
+        assert_eq!(author.name(), Some("Bob"));
 
         Ok(())
     }

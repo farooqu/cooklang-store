@@ -85,6 +85,31 @@ impl RecipeRepository {
         content: &str,
         category: Option<&str>,
     ) -> Result<Recipe> {
+        self.create_with_author_and_comment(name, content, category, None, None)
+            .await
+    }
+
+    /// Create a new recipe with an optional author
+    pub async fn create_with_author(
+        &self,
+        name: &str,
+        content: &str,
+        category: Option<&str>,
+        author: Option<&str>,
+    ) -> Result<Recipe> {
+        self.create_with_author_and_comment(name, content, category, author, None)
+            .await
+    }
+
+    /// Create a new recipe with optional author and comment
+    pub async fn create_with_author_and_comment(
+        &self,
+        name: &str,
+        content: &str,
+        category: Option<&str>,
+        author: Option<&str>,
+        comment: Option<&str>,
+    ) -> Result<Recipe> {
         // Parse the recipe to validate it
         parse_recipe(content, name).map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
 
@@ -106,9 +131,10 @@ impl RecipeRepository {
         // Write the file
         std::fs::write(&full_path, content).context("Failed to write recipe file")?;
 
-        // Commit to git
-        let commit_message = format!("Add recipe: {}", name);
-        git::commit_file(&self.git_repo, &git_path, &commit_message)?;
+        // Commit to git with author and comment information
+        let commit_message =
+            self.format_commit_message(&format!("Add recipe: {}", name), author, comment);
+        git::commit_file_with_author(&self.git_repo, &git_path, &commit_message, author)?;
 
         // Update cache
         let parsed =
@@ -158,6 +184,33 @@ impl RecipeRepository {
         name: Option<&str>,
         content: Option<&str>,
         category: Option<Option<&str>>,
+    ) -> Result<Recipe> {
+        self.update_with_author_and_comment(git_path, name, content, category, None, None)
+            .await
+    }
+
+    /// Update a recipe with an optional author
+    pub async fn update_with_author(
+        &self,
+        git_path: &str,
+        name: Option<&str>,
+        content: Option<&str>,
+        category: Option<Option<&str>>,
+        author: Option<&str>,
+    ) -> Result<Recipe> {
+        self.update_with_author_and_comment(git_path, name, content, category, author, None)
+            .await
+    }
+
+    /// Update a recipe with optional author and comment
+    pub async fn update_with_author_and_comment(
+        &self,
+        git_path: &str,
+        name: Option<&str>,
+        content: Option<&str>,
+        category: Option<Option<&str>>,
+        author: Option<&str>,
+        comment: Option<&str>,
     ) -> Result<Recipe> {
         // Read current recipe from cache
         let current = self
@@ -209,19 +262,60 @@ impl RecipeRepository {
 
             // If path changed, delete old file
             if new_git_path != git_path {
-                git::delete_file(
-                    &self.git_repo,
-                    git_path,
-                    &format!("Delete recipe: {}", current.name),
-                )?;
+                let delete_base = format!("Delete recipe: {}", current.name);
+                let delete_message = self.format_commit_message(&delete_base, author, comment);
+                git::delete_file_with_author(&self.git_repo, git_path, &delete_message, author)?;
             }
 
-            let commit_message = if content.is_some() {
-                format!("Update recipe: {}", new_name)
-            } else {
-                format!("Move recipe: {} -> {}", current.name, new_name)
+            // Determine commit message based on what changed
+            let name_changed = name.is_some();
+            let category_changed = category.is_some()
+                && category.as_ref().copied().flatten() != current.category.as_deref();
+            let content_changed = content.is_some();
+
+            let base_message = match (content_changed, name_changed, category_changed) {
+                // Content changed
+                (true, true, true) => {
+                    format!(
+                        "Update recipe: {} (renamed from {}, moved to {})",
+                        new_name, current.name, new_category.unwrap_or("root")
+                    )
+                }
+                (true, true, false) => format!("Update recipe: {} (renamed from {})", new_name, current.name),
+                (true, false, true) => {
+                    format!(
+                        "Update recipe: {} (moved to {})",
+                        new_name,
+                        new_category.unwrap_or("root")
+                    )
+                }
+                (true, false, false) => format!("Update recipe: {}", new_name),
+
+                // No content change, but structure changed
+                (false, true, true) => {
+                    format!(
+                        "Move recipe: {} -> {} (to {})",
+                        current.name, new_name, new_category.unwrap_or("root")
+                    )
+                }
+                (false, true, false) => {
+                    format!("Rename recipe: {} -> {}", current.name, new_name)
+                }
+                (false, false, true) => {
+                    format!(
+                        "Move recipe: {} ({} -> {})",
+                        new_name,
+                        current.category.as_deref().unwrap_or("root"),
+                        new_category.unwrap_or("root")
+                    )
+                }
+
+                // No changes (shouldn't happen, but handle it)
+                (false, false, false) => format!("Update recipe: {}", new_name),
             };
-            git::commit_file(&self.git_repo, &new_git_path, &commit_message)?;
+
+            let commit_message = self.format_commit_message(&base_message, author, comment);
+            git::commit_file_with_author(&self.git_repo, &new_git_path, &commit_message, author)?;
         }
 
         // Update cache
@@ -254,18 +348,33 @@ impl RecipeRepository {
 
     /// Delete a recipe
     pub async fn delete(&self, git_path: &str) -> Result<()> {
+        self.delete_with_author_and_comment(git_path, None, None)
+            .await
+    }
+
+    /// Delete a recipe with an optional author
+    pub async fn delete_with_author(&self, git_path: &str, author: Option<&str>) -> Result<()> {
+        self.delete_with_author_and_comment(git_path, author, None)
+            .await
+    }
+
+    /// Delete a recipe with optional author and comment
+    pub async fn delete_with_author_and_comment(
+        &self,
+        git_path: &str,
+        author: Option<&str>,
+        comment: Option<&str>,
+    ) -> Result<()> {
         // Get recipe name from cache for commit message
         let cached = self
             .cache
             .get(git_path)
             .ok_or_else(|| anyhow!("Recipe not found: {}", git_path))?;
 
-        // Delete from git
-        git::delete_file(
-            &self.git_repo,
-            git_path,
-            &format!("Delete recipe: {}", cached.name),
-        )?;
+        // Delete from git with author and comment information
+        let delete_base = format!("Delete recipe: {}", cached.name);
+        let delete_message = self.format_commit_message(&delete_base, author, comment);
+        git::delete_file_with_author(&self.git_repo, git_path, &delete_message, author)?;
 
         // Delete from cache
         self.cache.remove(git_path);
@@ -321,6 +430,26 @@ impl RecipeRepository {
     /// Get all categories
     pub fn get_categories(&self) -> Vec<String> {
         self.cache.get_categories()
+    }
+
+    /// Format a commit message with optional author and comment
+    fn format_commit_message(
+        &self,
+        base_message: &str,
+        author: Option<&str>,
+        comment: Option<&str>,
+    ) -> String {
+        let mut message = base_message.to_string();
+
+        if let Some(author_name) = author {
+            message.push_str(&format!(" (by {})", author_name));
+        }
+
+        if let Some(comment_text) = comment {
+            message.push_str(&format!(" - {}", comment_text));
+        }
+
+        message
     }
 
     /// Generate a git path from recipe name and category
@@ -446,6 +575,326 @@ mod tests {
         assert_eq!(repo.cache.len(), 1);
         repo.delete(&recipe.git_path).await?;
         assert_eq!(repo.cache.len(), 0);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_with_author() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{} test";
+        let recipe = repo
+            .create_with_author("Test Recipe", content, Some("desserts"), Some("Alice"))
+            .await?;
+
+        assert_eq!(recipe.name, "Test Recipe");
+
+        // Verify git commit has the author
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        assert_eq!(commit.author().name(), Some("Alice"));
+        assert!(commit.message().unwrap().contains("(by Alice)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_with_author() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, None).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author(&recipe.git_path, None, Some(new_content), None, Some("Bob"))
+            .await?;
+
+        // Verify git commit has the author
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        assert_eq!(commit.author().name(), Some("Bob"));
+        assert!(commit.message().unwrap().contains("(by Bob)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_delete_with_author() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, None).await?;
+
+        repo.delete_with_author(&recipe.git_path, Some("Charlie"))
+            .await?;
+
+        // Verify git commit has the author
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        assert_eq!(commit.author().name(), Some("Charlie"));
+        assert!(commit.message().unwrap().contains("(by Charlie)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_with_author_and_comment() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{} test";
+        let recipe = repo
+            .create_with_author_and_comment(
+                "Test Recipe",
+                content,
+                Some("desserts"),
+                Some("Alice"),
+                Some("Added classic chocolate cake"),
+            )
+            .await?;
+
+        assert_eq!(recipe.name, "Test Recipe");
+
+        // Verify git commit has the author and comment
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("(by Alice)"));
+        assert!(msg.contains("Added classic chocolate cake"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_with_author_and_comment() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, None).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author_and_comment(
+            &recipe.git_path,
+            None,
+            Some(new_content),
+            None,
+            Some("Bob"),
+            Some("Fixed ingredient quantities"),
+        )
+        .await?;
+
+        // Verify git commit has the author and comment
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("(by Bob)"));
+        assert!(msg.contains("Fixed ingredient quantities"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_content_only() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author(&recipe.git_path, None, Some(new_content), None, Some("Alice"))
+            .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Update recipe: Test"));
+        assert!(msg.contains("(by Alice)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_rename_only() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        repo.update_with_author(&recipe.git_path, Some("New Name"), None, None, Some("Bob"))
+            .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Rename recipe: Test -> New Name"));
+        assert!(msg.contains("(by Bob)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_move_only() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        repo.update_with_author(&recipe.git_path, None, None, Some(Some("mains")), Some("Charlie"))
+            .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Move recipe: Test"));
+        assert!(msg.contains("desserts -> mains"));
+        assert!(msg.contains("(by Charlie)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_rename_and_move() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        repo.update_with_author(
+            &recipe.git_path,
+            Some("New Name"),
+            None,
+            Some(Some("mains")),
+            Some("Alice"),
+        )
+        .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Move recipe: Test -> New Name"));
+        assert!(msg.contains("to mains"));
+        assert!(msg.contains("(by Alice)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_content_and_rename() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author(
+            &recipe.git_path,
+            Some("New Name"),
+            Some(new_content),
+            None,
+            Some("Bob"),
+        )
+        .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Update recipe: New Name"));
+        assert!(msg.contains("renamed from Test"));
+        assert!(msg.contains("(by Bob)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_content_and_recategorize() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author(
+            &recipe.git_path,
+            None,
+            Some(new_content),
+            Some(Some("mains")),
+            Some("Charlie"),
+        )
+        .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Update recipe: Test"));
+        assert!(msg.contains("moved to mains"));
+        assert!(msg.contains("(by Charlie)"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_all_three_changes() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, Some("desserts")).await?;
+
+        let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author_and_comment(
+            &recipe.git_path,
+            Some("New Name"),
+            Some(new_content),
+            Some(Some("mains")),
+            Some("Alice"),
+            Some("Complete overhaul"),
+        )
+        .await?;
+
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("Update recipe: New Name"));
+        assert!(msg.contains("renamed from Test"));
+        assert!(msg.contains("moved to mains"));
+        assert!(msg.contains("(by Alice)"));
+        assert!(msg.contains("Complete overhaul"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_delete_with_author_and_comment() -> Result<()> {
+        let (repo, git_dir) = setup_test_repo().await?;
+
+        let content = "# Test Recipe\n\n@ingredient{}";
+        let recipe = repo.create("Test", content, None).await?;
+
+        repo.delete_with_author_and_comment(
+            &recipe.git_path,
+            Some("Charlie"),
+            Some("Duplicate recipe"),
+        )
+        .await?;
+
+        // Verify git commit has the author and comment
+        let git_repo = git::init_repo(git_dir.path())?;
+        let head = git_repo.head()?;
+        let commit = head.peel_to_commit()?;
+        let msg = commit.message().unwrap();
+        assert!(msg.contains("(by Charlie)"));
+        assert!(msg.contains("Duplicate recipe"));
 
         Ok(())
     }

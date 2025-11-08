@@ -98,12 +98,45 @@ All architectural decisions made. Ready for implementation.
 - Cache provides: fast lookup, search by name/category/ingredients, filtering
 - No database migrations or schema management needed
 
-#### Milestone 2.3: Git Integration Layer
-- Implement git operations wrapper (commit, read, delete)
-- Auto-commit recipe changes with meaningful commit messages
-- Track file paths and git commit hashes in database
-- Handle git merge conflicts gracefully
-- Repository validation and error recovery
+#### Milestone 2.3: Git Integration Layer ✅ (Completed Nov 8, 2025)
+- ✅ Implement git operations wrapper (commit, read, delete)
+- ✅ Auto-commit recipe changes with meaningful commit messages
+- ✅ Track author/editor/contributor information in commit messages
+- ✅ Support for optional comments in commit messages
+- ✅ Support for author and comment tracking in all CRUD operations
+- ⏳ Handle git merge conflicts gracefully (deferred to Phase 3)
+- ⏳ Repository validation and error recovery (deferred to Phase 3)
+
+**Implementation Details**:
+- Git operations: `commit_file()`, `delete_file()`, `read_file()` with author variants
+- Author-aware variants: `commit_file_with_author()`, `delete_file_with_author()`
+- Repository methods support author and comment:
+  - `create_with_author_and_comment()`, `update_with_author_and_comment()`, `delete_with_author_and_comment()`
+  - All methods delegate through backward-compatible non-comment variants
+- Commit message format: `"Action: details (by {author}) - {comment}"`
+  - Author part optional: `(by {author})`
+  - Comment part optional: `- {comment}`
+  - Both can be provided, one, or neither
+
+**Update scenarios with specialized commit messages**:
+- Content only: `"Update recipe: Name (by Author)"`
+- Rename only: `"Rename recipe: Old -> New (by Author)"`
+- Move only (category): `"Move recipe: Name (old_cat -> new_cat) (by Author)"`
+- Rename + move: `"Move recipe: Old -> New (to category) (by Author)"`
+- Content + rename: `"Update recipe: New (renamed from Old) (by Author)"`
+- Content + move: `"Update recipe: Name (moved to category) (by Author)"`
+- All three: `"Update recipe: New (renamed from Old, moved to category) (by Author)"`
+
+**Example commit messages**:
+- `"Add recipe: Chocolate Cake"`
+- `"Update recipe: Chocolate Cake (by Alice)"`
+- `"Rename recipe: Old Name -> New Name (by Bob)"`
+- `"Move recipe: Cake (desserts -> baking) (by Charlie)"`
+- `"Move recipe: Old -> New (to baking) (by Dave)"`
+- `"Delete recipe: Chocolate Cake (by Eve) - Duplicate entry"`
+
+- Full test coverage: 37 tests including all update scenarios with author and comment tracking
+- Backward-compatible: existing methods work without author/comment information
 
 #### Milestone 2.4: Basic REST API
 - Configure Axum routes and middleware
