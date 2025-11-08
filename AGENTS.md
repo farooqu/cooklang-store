@@ -117,8 +117,8 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Get explicit approval before writing code
 - This prevents rework and keeps the codebase coherent
 
-**CRITICAL: Question Every Technology Choice**:
-- For each major technology decision (databases, caches, frameworks, etc.), explicitly ask:
+**CRITICAL: Question Every Technology Choice (During Planning)**:
+- **During planning phase ONLY**: For each major technology decision, explicitly ask:
   - **"Is this actually needed?"** - Challenge assumptions
   - **"What's the simplest solution?"** - Align with "minimal" philosophy
   - **"What are the trade-offs?"** - Deployment complexity, code complexity, operational burden
@@ -126,6 +126,21 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Self-hosted family scenario: prefer simple, zero-config solutions over feature-rich ones
 - If a technology adds complexity without clear benefit, propose something simpler
 - This applies to architecture AND specific implementation choices
+
+**CRITICAL: Respect Decided Decisions**:
+- Once a technology choice is documented in PROJECT_PLAN.md and approved, treat it as decided
+- Do NOT re-question the same decision during implementation phase unless explicitly asked
+- If you discover a simpler alternative during implementation:
+  - Document it as technical debt or future consideration
+  - Do not change course mid-implementation
+  - Propose re-evaluation in a separate task/thread if the change is significant
+- This prevents constant second-guessing while allowing deliberate re-evaluation
+
+**Documented Architectural Decisions**:
+- ✅ **Caching**: In-memory DashMap (not SQLite) - decided during M2.2 planning after questioning alternatives
+- ✅ **Storage**: Git repository as source of truth + in-memory cache for queries
+- ✅ **API**: REST (simple, self-hosted friendly)
+- ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
 
 **When implementing features**:
 1. Create feature branch from `main`
