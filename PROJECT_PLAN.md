@@ -52,13 +52,51 @@ All architectural decisions made. Ready for implementation.
 - ✅ Simple parse_recipe() helper function with error handling
 - ✅ Unit tests verifying parser integration works correctly
 
-#### Milestone 2.2: Recipe Storage (Git + SQLite)
-- Design SQLite schema for recipe metadata and search index
-- Implement git repository initialization and management
-- Store recipes as `.cook` files in git repository
-- Store parsed recipe metadata in SQLite for fast querying
-- Migration system for SQLite schema changes
-- Sync strategy between git and database
+#### Milestone 2.2: Recipe Storage (Git + In-Memory Cache) ✅ (Completed Nov 8, 2025)
+
+**Design Rationale**:
+- Git is the persistent source of truth (provides durability, versioning, collaboration)
+- In-memory cache (DashMap) for fast search and browsing
+- Cache is rebuilt on startup by scanning git
+- No external dependencies or migration management needed
+- Perfect for self-hosted family scenario with <1000 recipes
+- Simple to understand and deploy
+
+**In-Memory Cache Structure**:
+- `RecipeIndex`: Concurrent hashmap (DashMap) storing `git_path -> Recipe`
+- Recipe metadata: name, description, category, ingredients list, cookware list, parsed content
+- Secondary indexes:
+  - By name (for search)
+  - By category (for browsing)
+  - By ingredients (for filtering)
+- Cache is completely rebuilt from git on startup
+
+**Git Repository Management**:
+- Initialize git repo on first startup if missing
+- Store recipes as `.cook` files with human-readable paths: `recipes/{category}/{subcategory}/{recipe-slug}.cook`
+  - Categories and subcategories from recipe metadata or user input
+  - Recipe slug derived from recipe name (lowercase, hyphens, no special chars)
+  - Supports arbitrary nesting depth for organization
+  - Example: `recipes/desserts/chocolate/triple-chocolate-cake.cook`
+- Track full git path (relative to repo root) as canonical identifier in memory
+- On startup: discover all `.cook` files recursively and populate cache
+- Handle duplicate recipe names in same category by appending numeric suffix (e.g., `chocolate-cake-2.cook`)
+
+**Cache Synchronization Strategy**:
+- **Git is source of truth**: All recipe content lives in `.cook` files
+- **In-memory cache is volatile**: Fast but lost on restart
+- **Write-through pattern**: Update git first, then update in-memory cache
+- **Startup**: Scan git and rebuild entire cache
+- **Conflict resolution**: If cache is ever out of sync, rescan git and rebuild
+- **Atomicity**: All write operations commit to git first; if git fails, operation fails; only then update cache
+
+**Implementation Details**:
+- `RecipeIndex` struct wrapping DashMap<String, Recipe>
+- `RecipeRepository` struct managing all CRUD operations
+- Methods: `create()`, `read()`, `update()`, `delete()`, `list()`, `search()`, `rebuild_from_git()`
+- Each write operation: commit to git first, then update cache (git failure = operation failure)
+- Cache provides: fast lookup, search by name/category/ingredients, filtering
+- No database migrations or schema management needed
 
 #### Milestone 2.3: Git Integration Layer
 - Implement git operations wrapper (commit, read, delete)
