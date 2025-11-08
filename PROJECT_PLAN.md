@@ -46,30 +46,39 @@ All architectural decisions made. Ready for implementation.
 
 ### Milestones
 
-#### Milestone 2.1: CookLang Parser
-- Implement CookLang specification parser
-- Support ingredients, cookware, timers, metadata, comments
-- Validate recipe syntax
-- Handle parsing errors gracefully
-- Unit tests for all parser features
+#### Milestone 2.1: CookLang Parser Integration
+- Integrate `cooklang` crate (v0.6) parser
+- Create wrapper/adapter layer for recipe parsing
+- Extract ingredients, cookware, timers, metadata, comments
+- Handle parsing errors gracefully with user-friendly messages
+- Unit tests for parser integration and edge cases
 
-#### Milestone 2.2: Recipe Storage
-- Design database schema for recipes
-- Implement recipe CRUD operations
-- Store parsed recipe components separately for querying
-- Store original CookLang source
-- Migration system for schema changes
+#### Milestone 2.2: Recipe Storage (Git + SQLite)
+- Design SQLite schema for recipe metadata and search index
+- Implement git repository initialization and management
+- Store recipes as `.cook` files in git repository
+- Store parsed recipe metadata in SQLite for fast querying
+- Migration system for SQLite schema changes
+- Sync strategy between git and database
 
-#### Milestone 2.3: Basic API
-- Set up web framework
-- Implement endpoints:
-  - `POST /api/v1/recipes` - Create recipe
-  - `GET /api/v1/recipes` - List recipes (with pagination)
+#### Milestone 2.3: Git Integration Layer
+- Implement git operations wrapper (commit, read, delete)
+- Auto-commit recipe changes with meaningful commit messages
+- Track file paths and git commit hashes in database
+- Handle git merge conflicts gracefully
+- Repository validation and error recovery
+
+#### Milestone 2.4: Basic REST API
+- Configure Axum routes and middleware
+- Implement recipe CRUD endpoints:
+  - `POST /api/v1/recipes` - Create recipe (writes .cook file + git commit)
+  - `GET /api/v1/recipes` - List recipes with pagination
   - `GET /api/v1/recipes/:id` - Get single recipe
-  - `PUT /api/v1/recipes/:id` - Update recipe
-  - `DELETE /api/v1/recipes/:id` - Delete recipe
+  - `PUT /api/v1/recipes/:id` - Update recipe (git commit)
+  - `DELETE /api/v1/recipes/:id` - Delete recipe (git commit)
 - Input validation and error handling
-- API documentation (OpenAPI/Swagger)
+- Health check and status endpoints
+- Basic API documentation structure
 
 ## Phase 3: Enhanced Features
 
