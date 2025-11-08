@@ -139,6 +139,13 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - ✅ **API**: REST (simple, self-hosted friendly)
 - ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
 - ✅ **Recipe ID**: SHA256 hash of git_path (first 12 hex chars) - URL-friendly, deterministic, allows looking up recipes by ID in API while maintaining git_path internally
+- ✅ **Thread Safety**: git2::Repository wrapped in Mutex to allow Arc<RecipeRepository> in Axum state
+
+**API Module Structure** (`src/api/`):
+- `mod.rs`: Router builder and route definitions
+- `handlers.rs`: HTTP request handlers for all endpoints
+- `models.rs`: Request/response models and query parameters
+- `responses.rs`: Serializable response types and error responses
 
 **When implementing features**:
 1. Create feature branch from `main`

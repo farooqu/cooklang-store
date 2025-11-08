@@ -18,9 +18,17 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ## Project Status
 
-✅ **Phase 1 Complete** - Foundation established, ready for Phase 2 implementation.
+✅ **Phase 2 Partial Complete** - Core recipe engine and REST API implemented.
 
-**Tech Stack**: Rust + Axum + SQLite + Git storage
+**Completed**:
+- Milestone 2.1: CookLang Parser Integration ✅
+- Milestone 2.2: Recipe Storage (Git + In-Memory Cache) ✅
+- Milestone 2.3: Git Integration Layer ✅
+- Milestone 2.4: Basic REST API ✅
+
+**In Progress**: Enhanced search & filtering features
+
+**Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage
 
 ## Goals
 
@@ -93,8 +101,27 @@ JWT_SECRET=your-secret-key-here
 RUST_LOG=info
 ```
 
+## API
+
+The server provides a RESTful API for recipe management on `/api/v1`. 
+
+**Quick Endpoints**:
+- `GET /health` - Health check
+- `GET /api/v1/status` - Server status and stats
+- `POST /api/v1/recipes` - Create recipe
+- `GET /api/v1/recipes` - List recipes (paginated)
+- `GET /api/v1/recipes/:recipe_id` - Get recipe
+- `PUT /api/v1/recipes/:recipe_id` - Update recipe
+- `DELETE /api/v1/recipes/:recipe_id` - Delete recipe
+- `GET /api/v1/recipes/search` - Search recipes by name
+- `GET /api/v1/categories` - List categories
+- `GET /api/v1/categories/:name` - Get recipes in category
+
+See [docs/API.md](docs/API.md) for complete API documentation.
+
 ## Documentation
 
+- [docs/API.md](docs/API.md) - Full REST API documentation and examples
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - Architecture decisions and development roadmap
 - [AGENTS.md](AGENTS.md) - Coding conventions and guidelines for AI agents
 

@@ -3,6 +3,7 @@ use git2::Repository as GitRepository;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::path::Path;
+use std::sync::Mutex;
 
 use crate::cache::{generate_recipe_id, CachedRecipe, RecipeIndex};
 use crate::git;
@@ -21,7 +22,7 @@ pub struct Recipe {
 /// Manages recipe operations across git and in-memory cache
 pub struct RecipeRepository {
     cache: RecipeIndex,
-    git_repo: GitRepository,
+    git_repo: Mutex<GitRepository>,
 }
 
 impl RecipeRepository {
@@ -30,7 +31,10 @@ impl RecipeRepository {
         let git_repo = git::init_repo(git_path)?;
         let cache = RecipeIndex::new();
 
-        let repo = RecipeRepository { cache, git_repo };
+        let repo = RecipeRepository {
+            cache,
+            git_repo: Mutex::new(git_repo),
+        };
 
         // Rebuild cache from git on initialization
         repo.rebuild_from_git().await?;
@@ -42,11 +46,12 @@ impl RecipeRepository {
     pub async fn rebuild_from_git(&self) -> Result<()> {
         self.cache.clear();
 
-        let cook_files = git::discover_cook_files(&self.git_repo)?;
+        let git_repo = self.git_repo.lock().unwrap();
+        let cook_files = git::discover_cook_files(&git_repo)?;
 
         for git_path in cook_files {
             // Read the file content
-            match git::read_file(&self.git_repo, &git_path) {
+            match git::read_file(&git_repo, &git_path) {
                 Ok(content) => {
                     // Extract category from path (recipes/{category}/{...}/{slug}.cook)
                     let category = self.extract_category_from_path(&git_path);
@@ -119,8 +124,8 @@ impl RecipeRepository {
         let git_path = self.generate_git_path(name, category).await?;
 
         // Write to git first (source of truth)
-        let workdir = self
-            .git_repo
+        let git_repo = self.git_repo.lock().unwrap();
+        let workdir = git_repo
             .workdir()
             .context("Repository has no working directory")?;
         let full_path = workdir.join(&git_path);
@@ -136,7 +141,7 @@ impl RecipeRepository {
         // Commit to git with author and comment information
         let commit_message =
             self.format_commit_message(&format!("Add recipe: {}", name), author, comment);
-        git::commit_file_with_author(&self.git_repo, &git_path, &commit_message, author)?;
+        git::commit_file_with_author(&git_repo, &git_path, &commit_message, author)?;
 
         // Update cache
         let parsed =
@@ -170,7 +175,8 @@ impl RecipeRepository {
             .get(git_path)
             .ok_or_else(|| anyhow!("Recipe not found: {}", git_path))?;
 
-        let content = git::read_file(&self.git_repo, git_path)?;
+        let git_repo = self.git_repo.lock().unwrap();
+        let content = git::read_file(&git_repo, git_path)?;
 
         Ok(Recipe {
             git_path: cached.git_path,
@@ -244,8 +250,8 @@ impl RecipeRepository {
 
         // Write to git (if content provided or path changed)
         if content.is_some() || new_git_path != git_path {
-            let workdir = self
-                .git_repo
+            let git_repo = self.git_repo.lock().unwrap();
+            let workdir = git_repo
                 .workdir()
                 .context("Repository has no working directory")?;
             let full_path = workdir.join(&new_git_path);
@@ -259,7 +265,7 @@ impl RecipeRepository {
             let file_content = if let Some(c) = content {
                 c.to_string()
             } else {
-                git::read_file(&self.git_repo, git_path)?
+                git::read_file(&git_repo, git_path)?
             };
 
             std::fs::write(&full_path, &file_content).context("Failed to write recipe file")?;
@@ -268,7 +274,7 @@ impl RecipeRepository {
             if new_git_path != git_path {
                 let delete_base = format!("Delete recipe: {}", current.name);
                 let delete_message = self.format_commit_message(&delete_base, author, comment);
-                git::delete_file_with_author(&self.git_repo, git_path, &delete_message, author)?;
+                git::delete_file_with_author(&git_repo, git_path, &delete_message, author)?;
             }
 
             // Determine commit message based on what changed
@@ -326,11 +332,12 @@ impl RecipeRepository {
             };
 
             let commit_message = self.format_commit_message(&base_message, author, comment);
-            git::commit_file_with_author(&self.git_repo, &new_git_path, &commit_message, author)?;
+            git::commit_file_with_author(&git_repo, &new_git_path, &commit_message, author)?;
         }
 
         // Update cache
-        let file_content = git::read_file(&self.git_repo, &new_git_path)?;
+        let git_repo = self.git_repo.lock().unwrap();
+        let file_content = git::read_file(&git_repo, &new_git_path)?;
         let parsed = parse_recipe(&file_content, new_name)
             .map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
 
@@ -387,7 +394,8 @@ impl RecipeRepository {
         // Delete from git with author and comment information
         let delete_base = format!("Delete recipe: {}", cached.name);
         let delete_message = self.format_commit_message(&delete_base, author, comment);
-        git::delete_file_with_author(&self.git_repo, git_path, &delete_message, author)?;
+        let git_repo = self.git_repo.lock().unwrap();
+        git::delete_file_with_author(&git_repo, git_path, &delete_message, author)?;
 
         // Delete from cache
         self.cache.remove(git_path);
@@ -443,6 +451,11 @@ impl RecipeRepository {
     /// Get all categories
     pub fn get_categories(&self) -> Vec<String> {
         self.cache.get_categories()
+    }
+
+    /// Get git_path by recipe_id
+    pub fn get_recipe_git_path(&self, recipe_id: &str) -> Option<String> {
+        self.cache.get_git_path(recipe_id)
     }
 
     /// Format a commit message with optional author and comment
@@ -974,7 +987,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo = RecipeRepository {
             cache: RecipeIndex::new(),
-            git_repo: git::init_repo(temp_dir.path()).unwrap(),
+            git_repo: Mutex::new(git::init_repo(temp_dir.path()).unwrap()),
         };
 
         assert_eq!(repo.name_to_slug("Simple Recipe"), "simple-recipe");
@@ -990,7 +1003,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo = RecipeRepository {
             cache: RecipeIndex::new(),
-            git_repo: git::init_repo(temp_dir.path()).unwrap(),
+            git_repo: Mutex::new(git::init_repo(temp_dir.path()).unwrap()),
         };
 
         assert_eq!(
@@ -1009,7 +1022,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo = RecipeRepository {
             cache: RecipeIndex::new(),
-            git_repo: git::init_repo(temp_dir.path()).unwrap(),
+            git_repo: Mutex::new(git::init_repo(temp_dir.path()).unwrap()),
         };
 
         assert_eq!(
