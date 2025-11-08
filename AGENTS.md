@@ -117,27 +117,24 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Get explicit approval before writing code
 - This prevents rework and keeps the codebase coherent
 
-**CRITICAL: Question Every Technology Choice (During Planning)**:
-- **During planning phase ONLY**: For each major technology decision, explicitly ask:
+**CRITICAL: Question Technology Choices Anytime**:
+- For any major technology decision (at any phase), you may explicitly ask:
   - **"Is this actually needed?"** - Challenge assumptions
   - **"What's the simplest solution?"** - Align with "minimal" philosophy
   - **"What are the trade-offs?"** - Deployment complexity, code complexity, operational burden
   - **"Are there simpler alternatives?"** - In-memory vs SQLite, async vs sync, etc.
 - Self-hosted family scenario: prefer simple, zero-config solutions over feature-rich ones
-- If a technology adds complexity without clear benefit, propose something simpler
-- This applies to architecture AND specific implementation choices
 
-**CRITICAL: Respect Decided Decisions**:
-- Once a technology choice is documented in PROJECT_PLAN.md and approved, treat it as decided
-- Do NOT re-question the same decision during implementation phase unless explicitly asked
-- If you discover a simpler alternative during implementation:
-  - Document it as technical debt or future consideration
-  - Do not change course mid-implementation
-  - Propose re-evaluation in a separate task/thread if the change is significant
-- This prevents constant second-guessing while allowing deliberate re-evaluation
+**CRITICAL: Document Reasoning for Decisions**:
+- When you question a technology choice, explicitly decide: keep it or change it?
+- **If keeping it**: Update AGENTS.md "Documented Architectural Decisions" with the reasoning for why you rejected the alternative
+- **If changing it**: Update PROJECT_PLAN.md and AGENTS.md with the new decision and rationale
+- Include in the reasoning: trade-offs considered, why this choice serves the project goals better
+- This prevents the same question from being asked repeatedly because the reasoning is captured
+- Example: "✅ **Caching**: In-memory DashMap (not SQLite) - simpler deployment, no migrations needed, cache rebuilds from git on startup which is fast for typical family-scale collections"
 
 **Documented Architectural Decisions**:
-- ✅ **Caching**: In-memory DashMap (not SQLite) - decided during M2.2 planning after questioning alternatives
+- ✅ **Caching**: In-memory DashMap (not SQLite) - simpler deployment, no migrations, cache rebuilds from git on startup
 - ✅ **Storage**: Git repository as source of truth + in-memory cache for queries
 - ✅ **API**: REST (simple, self-hosted friendly)
 - ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
