@@ -28,9 +28,9 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 **Selected**:
 - Language: **Rust** (use official `cooklang-rs` parser library)
 - Parser: **cooklang-rs** (canonical CookLang parser from cooklang.org)
-- Metadata DB: **SQLite** (lightweight, file-based, perfect for self-hosting)
+- Caching: **In-memory (DashMap)** (fast, volatile, rebuilt from git on startup)
 - API: **REST** (simple, well-understood)
-- Storage: **Git repository** for recipe files + SQLite for search index/metadata
+- Storage: **Git repository** for recipe files + in-memory cache for search/index
 
 ## Code Conventions
 
@@ -98,10 +98,6 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - **View logs**: `docker-compose logs -f`
 - **Stop**: `docker-compose down`
 
-### Database
-- **Run migrations**: `sqlx migrate run`
-- **Create migration**: `sqlx migrate add <name>`
-
 ## Development Workflow
 
 **BEFORE starting any work**: Consult [PROJECT_PLAN.md](PROJECT_PLAN.md) to understand:
@@ -109,6 +105,17 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Architectural decisions already made
 - Which milestones are complete or in progress
 - Technical debt and known issues
+
+**CRITICAL: Review and Refine the Plan First**:
+- Do NOT proceed to implementation until the plan is clear and detailed
+- For each milestone being implemented, analyze:
+  - Is it aligned with project goals and philosophy?
+  - Are requirements specific enough (data structures, APIs, behaviors)?
+  - Are edge cases and error handling covered?
+  - Is the scope reasonable for one milestone?
+- Propose revisions to PROJECT_PLAN.md with specific, actionable details
+- Get explicit approval before writing code
+- This prevents rework and keeps the codebase coherent
 
 **When implementing features**:
 1. Create feature branch from `main`
