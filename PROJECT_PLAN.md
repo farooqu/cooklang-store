@@ -39,10 +39,10 @@
 - Simple for self-hosted scenarios
 - Easy to implement and understand
 
-### Phase 1 Complete ✅
+### Phase 1 Complete ✅ (Nov 8, 2025)
 All architectural decisions made. Ready for implementation.
 
-## Phase 2: Core Recipe Engine
+## Phase 2: Core Recipe Engine ✅ (Nov 8, 2025)
 
 ### Milestones
 
@@ -167,88 +167,87 @@ All architectural decisions made. Ready for implementation.
 - All write operations include author and comment tracking from API
 - API properly handles not-found errors and validation errors
 
-## Phase 3: Enhanced Features
-
-#### Milestone 3.1: Search & Filtering
-- Full-text search on recipe names and steps
-- Filter by ingredients
-- Filter by tags/categories
-- Filter by cooking time
-- Sort by date, name, rating, etc.
-
-#### Milestone 3.2: Recipe Utilities
-- Recipe scaling (adjust servings)
-- Shopping list generation from multiple recipes
-- Ingredient unit conversion
-- Nutrition calculation (optional - may require external API)
-
-#### Milestone 3.3: Tags & Organization
-- Tag management (create, edit, delete)
-- Assign multiple tags to recipes
-- Tag-based browsing
-- Collections/cookbooks (group recipes)
-
-## Phase 4: User Management
-
-#### Milestone 4.1: Authentication & Authorization
-- User registration and login
-- Password hashing and security
-- JWT or session-based auth
-- Role-based access control (admin, user)
-- API key support for integrations
-
-#### Milestone 4.2: Multi-User Support
-- User-specific recipe libraries
-- Recipe sharing (public/private/shared)
-- User preferences and settings
-- Recipe favorites/bookmarks
-
-## Phase 5: Advanced Features
-
-#### Milestone 5.1: Meal Planning
-- Weekly meal planner
-- Drag-and-drop meal scheduling
-- Automatic shopping list from meal plan
-- Meal plan templates
-
-#### Milestone 5.2: Import/Export
-- Import from other formats (JSON, plain text)
-- Export recipes (PDF, JSON, CookLang)
-- Bulk import/export
-- Recipe backup and restore
-
-#### Milestone 5.3: Social Features (Optional)
-- Recipe ratings and reviews
-- User comments
-- Recipe sharing links
-- Public recipe discovery
-
-## Phase 6: Production Readiness
+## Phase 3: Testing & Deployment
 
 ### Milestones
 
-#### Milestone 6.1: Performance & Optimization
-- Database indexing strategy
-- Query optimization
-- Caching layer (Redis or in-memory)
-- Rate limiting
-- Response time monitoring
+#### Milestone 3.1: Docker Setup & Local Testing
+- ✅ Dockerfile configured (already exists)
+- [ ] Build and test Docker image locally
+- [ ] Create test recipes in git repository for manual testing
+- [ ] Verify docker-compose setup works end-to-end
+- [ ] Test all CRUD endpoints with curl/Postman
+- [ ] Verify git commits are recorded correctly
+- [ ] Test error handling and edge cases
 
-#### Milestone 6.2: Deployment & DevOps
-- Docker containerization
+#### Milestone 3.2: Bug Fixes & Stability
+- [ ] Fix any bugs discovered during testing
+- [ ] Verify cache rebuilds correctly on startup
+- [ ] Test with larger recipe collections
+- [ ] Verify git repository initialization on first run
+- [ ] Add logging for debugging
+
+#### Milestone 3.3: API Documentation & Testing Tools
+- [ ] Generate OpenAPI/Swagger specification
+- [ ] Create Postman collection for manual testing
+- [ ] Document all endpoints with examples
+- [ ] Create sample recipes for testing
+- [ ] Update README with quick start guide
+
+### Phase 3 Complete Criteria
+- Docker container runs without errors
+- All CRUD operations verified working
+- API is documented and testable
+- Project can be deployed and used immediately
+
+## Phase 4: Optimization & DevOps
+
+### Milestones
+
+#### Milestone 4.1: Performance & Monitoring
+- Performance benchmarking
+- Caching layer optimization (beyond basic in-memory)
+- Rate limiting implementation
+- Request logging and monitoring
+- Response time optimization
+
+#### Milestone 4.2: Deployment & Operations
 - CI/CD pipeline setup
 - Environment configuration management
-- Database backup strategy
-- Logging and monitoring
-- Health check endpoints
+- Git repository backup strategy
+- Logging and error tracking
+- Health check endpoints (may already exist)
 
-#### Milestone 6.3: Documentation & Testing
-- Complete API documentation
-- Integration test suite
+#### Milestone 4.3: Testing Coverage
+- Complete integration test suite
 - Load testing
 - Security audit
-- User documentation
-- Deployment guide
+- Maintain >80% code coverage
+
+## Phase 5: Search & Filtering
+
+### Milestones
+
+#### Milestone 5.1: Advanced Search
+- Full-text search on recipe names and steps
+- Filter by ingredients
+- Filter by categories (already have listing, add filtering)
+- Filter by cooking time
+- Sort by date, name, etc.
+
+#### Milestone 5.2: Shopping List Generation
+- Shopping list generation from multiple recipes
+- Ingredient unit conversion
+- Aggregation and normalization
+
+## Phase 6: Future Enhancements
+
+### Deferred Features
+- **Multi-user support & Authentication**: Can be added if self-hosting multiple users becomes a requirement
+- **Import/Export**: Useful for recipe migration, but not core CRUD functionality
+- **Meal Planning**: Belongs in frontend, not backend
+- **Recipe Ratings/Reviews**: Social features deferred
+- **OCR, AI Recommendations**: Advanced features for future consideration
 
 ## Technical Debt & Ongoing Tasks
 
