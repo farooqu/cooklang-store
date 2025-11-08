@@ -18,8 +18,8 @@ tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# Database
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite"] }
+# In-memory caching
+dashmap = "5.5"
 
 # CookLang parser
 cooklang = "0.6"
@@ -42,6 +42,17 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Environment variables
 dotenvy = "0.15"
 
+# Time/date handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# String utilities
+regex = "1.10"
+lazy_static = "1.4"
+
+# File system walking
+walkdir = "2.4"
+
 [dev-dependencies]
 # Testing
 http-body-util = "0.1"
+tempfile = "3.8"
