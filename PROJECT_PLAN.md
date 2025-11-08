@@ -142,10 +142,16 @@ All architectural decisions made. Ready for implementation.
 - Configure Axum routes and middleware
 - Implement recipe CRUD endpoints:
   - `POST /api/v1/recipes` - Create recipe (writes .cook file + git commit)
-  - `GET /api/v1/recipes` - List recipes with pagination
-  - `GET /api/v1/recipes/:id` - Get single recipe
-  - `PUT /api/v1/recipes/:id` - Update recipe (git commit)
-  - `DELETE /api/v1/recipes/:id` - Delete recipe (git commit)
+  - `GET /api/v1/recipes` - List all recipes (with pagination)
+  - `GET /api/v1/recipes/search` - Search recipes by name
+  - `GET /api/v1/recipes/:recipe_id` - Get single recipe
+  - `PUT /api/v1/recipes/:recipe_id` - Update recipe (git commit)
+  - `DELETE /api/v1/recipes/:recipe_id` - Delete recipe (git commit)
+- Implement category endpoints:
+  - `GET /api/v1/categories` - List all categories
+  - `GET /api/v1/categories/:name` - List recipes in category
+- Recipe ID generation: SHA256 hash of git_path (URL-friendly format)
+- Update in-memory cache to include recipe IDs with reverse lookup
 - Input validation and error handling
 - Health check and status endpoints
 - Basic API documentation structure

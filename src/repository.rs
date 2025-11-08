@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::path::Path;
 
-use crate::cache::{CachedRecipe, RecipeIndex};
+use crate::cache::{generate_recipe_id, CachedRecipe, RecipeIndex};
 use crate::git;
 use crate::parser::parse_recipe;
 
@@ -55,7 +55,9 @@ impl RecipeRepository {
                     let name_from_path = self.path_to_name(&git_path);
                     match parse_recipe(&content, &name_from_path) {
                         Ok(parsed_recipe) => {
+                            let recipe_id = generate_recipe_id(&git_path);
                             let cached = CachedRecipe {
+                                recipe_id,
                                 git_path: git_path.clone(),
                                 name: parsed_recipe.name.clone(),
                                 description: None,
@@ -140,7 +142,9 @@ impl RecipeRepository {
         let parsed =
             parse_recipe(content, name).map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
 
+        let recipe_id = generate_recipe_id(&git_path);
         let cached = CachedRecipe {
+            recipe_id,
             git_path: git_path.clone(),
             name: name.to_string(),
             description: None,
@@ -278,10 +282,15 @@ impl RecipeRepository {
                 (true, true, true) => {
                     format!(
                         "Update recipe: {} (renamed from {}, moved to {})",
-                        new_name, current.name, new_category.unwrap_or("root")
+                        new_name,
+                        current.name,
+                        new_category.unwrap_or("root")
                     )
                 }
-                (true, true, false) => format!("Update recipe: {} (renamed from {})", new_name, current.name),
+                (true, true, false) => format!(
+                    "Update recipe: {} (renamed from {})",
+                    new_name, current.name
+                ),
                 (true, false, true) => {
                     format!(
                         "Update recipe: {} (moved to {})",
@@ -295,7 +304,9 @@ impl RecipeRepository {
                 (false, true, true) => {
                     format!(
                         "Move recipe: {} -> {} (to {})",
-                        current.name, new_name, new_category.unwrap_or("root")
+                        current.name,
+                        new_name,
+                        new_category.unwrap_or("root")
                     )
                 }
                 (false, true, false) => {
@@ -327,7 +338,9 @@ impl RecipeRepository {
             self.cache.remove(git_path);
         }
 
+        let recipe_id = generate_recipe_id(&new_git_path);
         let cached = CachedRecipe {
+            recipe_id,
             git_path: new_git_path.clone(),
             name: new_name.to_string(),
             description: None,
@@ -706,8 +719,14 @@ mod tests {
         let recipe = repo.create("Test", content, Some("desserts")).await?;
 
         let new_content = "# Test Recipe Updated\n\n@ingredient{} updated";
-        repo.update_with_author(&recipe.git_path, None, Some(new_content), None, Some("Alice"))
-            .await?;
+        repo.update_with_author(
+            &recipe.git_path,
+            None,
+            Some(new_content),
+            None,
+            Some("Alice"),
+        )
+        .await?;
 
         let git_repo = git::init_repo(git_dir.path())?;
         let head = git_repo.head()?;
@@ -746,8 +765,14 @@ mod tests {
         let content = "# Test Recipe\n\n@ingredient{}";
         let recipe = repo.create("Test", content, Some("desserts")).await?;
 
-        repo.update_with_author(&recipe.git_path, None, None, Some(Some("mains")), Some("Charlie"))
-            .await?;
+        repo.update_with_author(
+            &recipe.git_path,
+            None,
+            None,
+            Some(Some("mains")),
+            Some("Charlie"),
+        )
+        .await?;
 
         let git_repo = git::init_repo(git_dir.path())?;
         let head = git_repo.head()?;

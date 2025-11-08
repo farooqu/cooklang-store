@@ -3,9 +3,20 @@ use std::sync::Arc;
 
 use crate::parser::ScalableRecipe;
 
+/// Generate a recipe ID by hashing the git_path
+pub fn generate_recipe_id(git_path: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(git_path);
+    let result = hasher.finalize();
+    // Use first 12 chars of hex for URL-friendly ID
+    format!("{:x}", result)[..12].to_string()
+}
+
 /// Represents a recipe in the cache
 #[derive(Debug, Clone)]
 pub struct CachedRecipe {
+    pub recipe_id: String,
     pub git_path: String,
     pub name: String,
     pub description: Option<String>,
@@ -17,6 +28,8 @@ pub struct CachedRecipe {
 pub struct RecipeIndex {
     // Primary index: git_path -> Recipe
     recipes: Arc<DashMap<String, CachedRecipe>>,
+    // Reverse index: recipe_id -> git_path
+    id_to_path: Arc<DashMap<String, String>>,
 }
 
 impl RecipeIndex {
@@ -24,12 +37,15 @@ impl RecipeIndex {
     pub fn new() -> Self {
         RecipeIndex {
             recipes: Arc::new(DashMap::new()),
+            id_to_path: Arc::new(DashMap::new()),
         }
     }
 
     /// Insert a recipe into the index
     pub fn insert(&self, git_path: String, recipe: CachedRecipe) {
-        self.recipes.insert(git_path, recipe);
+        let recipe_id = recipe.recipe_id.clone();
+        self.recipes.insert(git_path.clone(), recipe);
+        self.id_to_path.insert(recipe_id, git_path);
     }
 
     /// Get a recipe by git_path
@@ -37,9 +53,19 @@ impl RecipeIndex {
         self.recipes.get(git_path).map(|r| r.clone())
     }
 
+    /// Get git_path by recipe_id
+    pub fn get_git_path(&self, recipe_id: &str) -> Option<String> {
+        self.id_to_path.get(recipe_id).map(|r| r.clone())
+    }
+
     /// Remove a recipe from the index
     pub fn remove(&self, git_path: &str) -> Option<CachedRecipe> {
-        self.recipes.remove(git_path).map(|(_, v)| v)
+        if let Some((_, recipe)) = self.recipes.remove(git_path) {
+            self.id_to_path.remove(&recipe.recipe_id);
+            Some(recipe)
+        } else {
+            None
+        }
     }
 
     /// Get all recipes
@@ -112,6 +138,7 @@ impl RecipeIndex {
     /// Clear all recipes from the index
     pub fn clear(&self) {
         self.recipes.clear();
+        self.id_to_path.clear();
     }
 }
 
@@ -125,6 +152,7 @@ impl Clone for RecipeIndex {
     fn clone(&self) -> Self {
         RecipeIndex {
             recipes: Arc::clone(&self.recipes),
+            id_to_path: Arc::clone(&self.id_to_path),
         }
     }
 }
@@ -149,19 +177,23 @@ mod tests {
     #[test]
     fn test_insert_and_get() {
         let index = RecipeIndex::new();
+        let git_path = "recipes/test.cook".to_string();
+        let recipe_id = generate_recipe_id(&git_path);
         let recipe = CachedRecipe {
-            git_path: "recipes/test.cook".to_string(),
+            recipe_id: recipe_id.clone(),
+            git_path: git_path.clone(),
             name: "Test Recipe".to_string(),
             description: None,
             category: Some("desserts".to_string()),
             recipe: create_test_recipe("Test Recipe"),
         };
 
-        index.insert("recipes/test.cook".to_string(), recipe.clone());
-        let retrieved = index.get("recipes/test.cook").unwrap();
+        index.insert(git_path.clone(), recipe.clone());
+        let retrieved = index.get(&git_path).unwrap();
 
         assert_eq!(retrieved.name, "Test Recipe");
         assert_eq!(retrieved.category, Some("desserts".to_string()));
+        assert_eq!(retrieved.recipe_id, recipe_id);
     }
 
     #[test]
@@ -174,14 +206,17 @@ mod tests {
         ];
 
         for (path, name) in recipes {
+            let git_path = path.to_string();
+            let recipe_id = generate_recipe_id(&git_path);
             let recipe = CachedRecipe {
-                git_path: path.to_string(),
+                recipe_id,
+                git_path: git_path.clone(),
                 name: name.to_string(),
                 description: None,
                 category: None,
                 recipe: create_test_recipe(name),
             };
-            index.insert(path.to_string(), recipe);
+            index.insert(git_path, recipe);
         }
 
         let results = index.search_by_name("cake");
@@ -202,14 +237,17 @@ mod tests {
         ];
 
         for (path, name, category) in recipes {
+            let git_path = path.to_string();
+            let recipe_id = generate_recipe_id(&git_path);
             let recipe = CachedRecipe {
-                git_path: path.to_string(),
+                recipe_id,
+                git_path: git_path.clone(),
                 name: name.to_string(),
                 description: None,
                 category: category.map(|s| s.to_string()),
                 recipe: create_test_recipe(name),
             };
-            index.insert(path.to_string(), recipe);
+            index.insert(git_path, recipe);
         }
 
         let desserts = index.get_by_category("desserts");
@@ -222,19 +260,43 @@ mod tests {
     #[test]
     fn test_remove() {
         let index = RecipeIndex::new();
+        let git_path = "recipes/test.cook".to_string();
+        let recipe_id = generate_recipe_id(&git_path);
         let recipe = CachedRecipe {
-            git_path: "recipes/test.cook".to_string(),
+            recipe_id: recipe_id.clone(),
+            git_path: git_path.clone(),
             name: "Test".to_string(),
             description: None,
             category: None,
             recipe: create_test_recipe("Test"),
         };
 
-        index.insert("recipes/test.cook".to_string(), recipe);
+        index.insert(git_path.clone(), recipe);
         assert_eq!(index.len(), 1);
 
-        index.remove("recipes/test.cook");
+        index.remove(&git_path);
         assert_eq!(index.len(), 0);
+        // Verify reverse index is also cleaned up
+        assert!(index.get_git_path(&recipe_id).is_none());
+    }
+
+    #[test]
+    fn test_get_git_path_by_recipe_id() {
+        let index = RecipeIndex::new();
+        let git_path = "recipes/test.cook".to_string();
+        let recipe_id = generate_recipe_id(&git_path);
+        let recipe = CachedRecipe {
+            recipe_id: recipe_id.clone(),
+            git_path: git_path.clone(),
+            name: "Test".to_string(),
+            description: None,
+            category: None,
+            recipe: create_test_recipe("Test"),
+        };
+
+        index.insert(git_path.clone(), recipe);
+        let retrieved_path = index.get_git_path(&recipe_id).unwrap();
+        assert_eq!(retrieved_path, git_path);
     }
 
     #[test]
@@ -248,14 +310,17 @@ mod tests {
         ];
 
         for (path, name, category) in recipes {
+            let git_path = path.to_string();
+            let recipe_id = generate_recipe_id(&git_path);
             let recipe = CachedRecipe {
-                git_path: path.to_string(),
+                recipe_id,
+                git_path: git_path.clone(),
                 name: name.to_string(),
                 description: None,
                 category: category.map(|s| s.to_string()),
                 recipe: create_test_recipe(name),
             };
-            index.insert(path.to_string(), recipe);
+            index.insert(git_path, recipe);
         }
 
         let categories = index.get_categories();

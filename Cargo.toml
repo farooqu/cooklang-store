@@ -51,6 +51,7 @@ lazy_static = "1.4"
 
 # File system walking
 walkdir = "2.4"
+sha2 = "0.10.9"
 
 [dev-dependencies]
 # Testing
