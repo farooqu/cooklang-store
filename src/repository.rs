@@ -1,6 +1,4 @@
 use anyhow::{anyhow, Result};
-use lazy_static::lazy_static;
-use regex::Regex;
 use std::path::Path;
 
 use crate::cache::{generate_recipe_id, CachedRecipe, RecipeIndex};
@@ -426,29 +424,6 @@ impl RecipeRepository {
         self.cache.get_git_path(recipe_id)
     }
 
-    /// Generate a path from recipe name and category (deprecated, kept for backward compatibility)
-    async fn generate_git_path(&self, name: &str, category: Option<&str>) -> Result<String> {
-        let slug = self.name_to_slug(name);
-        let mut path = if let Some(cat) = category {
-            format!("recipes/{}/{}.cook", cat, slug)
-        } else {
-            format!("recipes/{}.cook", slug)
-        };
-
-        // Check for duplicates and append numeric suffix if needed
-        let mut counter = 2;
-        while self.cache.get(&path).is_some() {
-            path = if let Some(cat) = category {
-                format!("recipes/{}/{}-{}.cook", cat, slug, counter)
-            } else {
-                format!("recipes/{}-{}.cook", slug, counter)
-            };
-            counter += 1;
-        }
-
-        Ok(path)
-    }
-
     /// Generate a git path from a filename and category
     async fn generate_git_path_from_filename(
         &self,
@@ -481,17 +456,6 @@ impl RecipeRepository {
     /// Extract filename from a git path
     fn extract_filename_from_path(&self, git_path: &str) -> String {
         git_path.split('/').next_back().unwrap_or("").to_string()
-    }
-
-    /// Convert recipe name to URL-friendly slug
-    fn name_to_slug(&self, name: &str) -> String {
-        lazy_static! {
-            static ref SLUG_RE: Regex = Regex::new(r"[^a-z0-9]+").unwrap();
-        }
-
-        let slug = name.to_lowercase();
-        let slug = SLUG_RE.replace_all(&slug, "-");
-        slug.trim_matches('-').to_string()
     }
 
     /// Extract category from git path
@@ -949,21 +913,6 @@ mod tests {
 
         let mains = repo.list_by_category("mains");
         assert_eq!(mains.len(), 1);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_name_to_slug() -> Result<()> {
-        let temp_dir = TempDir::new()?;
-        let repo = RecipeRepository::new(temp_dir.path()).await?;
-
-        assert_eq!(repo.name_to_slug("Simple Recipe"), "simple-recipe");
-        assert_eq!(
-            repo.name_to_slug("Triple-Chocolate Cake!"),
-            "triple-chocolate-cake"
-        );
-        assert_eq!(repo.name_to_slug("CamelCaseRecipe"), "camelcaserecipe");
 
         Ok(())
     }

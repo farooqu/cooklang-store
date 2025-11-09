@@ -1678,7 +1678,7 @@ async fn test_find_recipe_by_name_impl(backend: &str) {
     let json: Value = serde_json::from_str(&body).unwrap();
 
     assert!(json["recipes"].is_array());
-    assert!(json["recipes"].as_array().unwrap().len() > 0);
+    assert!(!json["recipes"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
