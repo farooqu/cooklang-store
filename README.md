@@ -4,7 +4,7 @@ A service for managing, storing, and serving Cooklang recipe files.
 
 ## What is Cooklang?
 
-CookLang is a markup language for writing recipes that makes them easy to read for humans and easy to parse for computers. It uses simple syntax to denote ingredients, cookware, timers, and cooking steps.
+Cooklang is a markup language for writing recipes that makes them easy to read for humans and easy to parse for computers. It uses simple syntax to denote ingredients, cookware, timers, and cooking steps.
 
 Example:
 ```

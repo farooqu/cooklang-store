@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "cooklang_backend"
+name = "cooklang_store"
 path = "src/lib.rs"
 
 [dependencies]

@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains the CI/CD pipelines for the CookLang Backend project.
+This directory contains the CI/CD pipelines for the Cooklang Store project.
 
 ## Available Workflows
 

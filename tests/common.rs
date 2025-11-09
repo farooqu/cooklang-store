@@ -1,4 +1,4 @@
-use cooklang_backend::{api, repository::RecipeRepository};
+use cooklang_store::{api, repository::RecipeRepository};
 use std::fs;
 use std::sync::Arc;
 use tempfile::TempDir;

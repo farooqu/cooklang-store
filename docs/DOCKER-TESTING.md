@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `scripts/docker-test.sh` script provides a standalone way to test the CookLang Backend Docker image without requiring Rust to be installed. This is ideal for CI/CD pipelines, deployment testing, and environments where only Docker is available.
+The `scripts/docker-test.sh` script provides a standalone way to test the Cooklang Store Docker image without requiring Rust to be installed. This is ideal for CI/CD pipelines, deployment testing, and environments where only Docker is available.
 
 ## Prerequisites
 

@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use cooklang_backend::{api, repository::RecipeRepository};
+use cooklang_store::{api, repository::RecipeRepository};
 
 #[derive(Parser)]
 #[command(name = "cooklang-store")]
@@ -36,7 +36,7 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "cooklang_backend=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "cooklang_store=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
