@@ -130,21 +130,21 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ## Definition of Done
 
-- [ ] All API spec files updated (openapi.yaml, API.md, postman-collection.json)
-- [ ] All response/request structs refactored with camelCase + serde attributes
-- [ ] All handlers updated (create, update, list, get) and tested
-- [ ] Title extraction and filename generation working correctly
-- [ ] File renaming logic handles misalignment and updates on every write
-- [ ] Fallback lookup endpoints implemented (find-by-name, find-by-path)
-- [ ] Recipe ID stability documented and tested (Option 4: accept with migration tools)
-- [ ] >80% test coverage on new/modified functions
-- [ ] All integration tests passing (including ID change scenario)
-- [ ] Postman collection includes all new endpoints with working examples
-- [ ] API.md documents Recipe ID behavior and fallback endpoints
-- [ ] Documentation accurate and all examples tested
-- [ ] PROJECT_PLAN.md updated with completion notes
-- [ ] No regressions in other functionality
-- [ ] `cargo clippy` and `cargo fmt` pass with no issues
+- [x] All API spec files updated (openapi.yaml, API.md, postman-collection.json)
+- [x] All response/request structs refactored with camelCase + serde attributes
+- [x] All handlers updated (create, update, list, get) and tested
+- [x] Title extraction and filename generation working correctly
+- [x] File renaming logic handles misalignment and updates on every write
+- [x] Fallback lookup endpoints implemented (find-by-name, find-by-path)
+- [x] Recipe ID stability documented and tested (Option 4: accept with migration tools)
+- [x] >80% test coverage on new/modified functions
+- [x] All integration tests passing (including ID change scenario)
+- [x] Postman collection includes all new endpoints with working examples
+- [x] API.md documents Recipe ID behavior and fallback endpoints
+- [x] Documentation accurate and all examples tested
+- [x] PROJECT_PLAN.md updated with completion notes
+- [x] No regressions in other functionality
+- [x] `cargo clippy` and `cargo fmt` pass with no issues
 
 ---
 
