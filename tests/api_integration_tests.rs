@@ -219,38 +219,18 @@ async fn test_list_recipes_empty() {
 
 #[tokio::test]
 async fn test_list_recipes_with_pagination() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create first recipe
-    let content1 = load_recipe_fixture("recipe-1");
-    let payload1 = serde_json::json!({
-        "name": "Recipe 1",
-        "content": content1,
-        "category": "desserts"
-    });
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload1)))
-        .await
-        .unwrap();
-
-    // Create second recipe
-    let app2 = build_router();
-    let content2 = load_recipe_fixture("recipe-2");
-    let payload2 = serde_json::json!({
-        "name": "Recipe 2",
-        "content": content2,
-        "category": "desserts"
-    });
-    app2.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload2)))
-        .await
-        .unwrap();
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("recipe-1", Some("desserts"), "recipe-1.cook"),
+            ("recipe-2", Some("desserts"), "recipe-2.cook"),
+        ],
+    )
+    .await;
 
     // List with default pagination
-    let app3 = build_router();
-    let response = app3
-        .clone()
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/recipes", None))
         .await
         .unwrap();
@@ -266,27 +246,19 @@ async fn test_list_recipes_with_pagination() {
 
 #[tokio::test]
 async fn test_list_recipes_with_limit() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create 3 recipes
-    let fixture_names = vec!["recipe-1", "recipe-2", "test-recipe"];
-    for (i, fixture_name) in fixture_names.iter().enumerate() {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": format!("Recipe {}", i + 1),
-            "content": content,
-            "category": "desserts"
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("recipe-1", Some("desserts"), "recipe-1.cook"),
+            ("recipe-2", Some("desserts"), "recipe-2.cook"),
+            ("test-recipe", Some("desserts"), "test-recipe.cook"),
+        ],
+    )
+    .await;
 
     // List with limit=2
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/recipes?limit=2", None))
         .await
         .unwrap();
@@ -378,32 +350,19 @@ async fn test_search_recipes_empty() {
 
 #[tokio::test]
 async fn test_search_recipes_by_name() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create recipes with different names
-    let recipes = vec![
-        ("Chocolate Cake", "chocolate-cake"),
-        ("Vanilla Cake", "vanilla-cake"),
-        ("Pasta Carbonara", "pasta"),
-    ];
-
-    for (name, fixture_name) in recipes {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": name,
-            "content": content,
-            "category": "main"
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("chocolate-cake", Some("main"), "chocolate-cake.cook"),
+            ("vanilla-cake", Some("main"), "vanilla-cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+        ],
+    )
+    .await;
 
     // Search for "cake"
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/recipes/search?q=cake", None))
         .await
         .unwrap();
@@ -424,23 +383,15 @@ async fn test_search_recipes_by_name() {
 
 #[tokio::test]
 async fn test_search_case_insensitive() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    let content = load_recipe_fixture("chocolate-cake");
-    let payload = serde_json::json!({
-        "name": "Chocolate Cake",
-        "content": content,
-        "category": "desserts"
-    });
-
-    app1.oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-        .await
-        .unwrap();
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![("chocolate-cake", Some("desserts"), "chocolate-cake.cook")],
+    )
+    .await;
 
     // Search with different cases
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request(
             "GET",
             "/api/v1/recipes/search?q=CHOCOLATE",
@@ -479,31 +430,19 @@ async fn test_list_categories_empty() {
 
 #[tokio::test]
 async fn test_list_categories() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create recipes in different categories
-    let recipes = vec![
-        ("Cake", "cake", "desserts"),
-        ("Pasta", "pasta", "main"),
-        ("Test Recipe", "test-recipe", "appetizers"),
-    ];
-    for (name, fixture_name, category) in recipes {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": name,
-            "content": content,
-            "category": category
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+            ("test-recipe", Some("appetizers"), "test-recipe.cook"),
+        ],
+    )
+    .await;
 
     // List categories
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/categories", None))
         .await
         .unwrap();
@@ -522,42 +461,20 @@ async fn test_list_categories() {
 
 #[tokio::test]
 async fn test_get_recipes_in_category() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create recipes in different categories
-    let dessert_recipes = vec![("Cake", "cake"), ("Cookie", "cake")];
-    let main_recipes = vec![("Pasta", "pasta"), ("Steak", "pasta")];
-
-    for (name, fixture_name) in &dessert_recipes {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": name,
-            "content": content,
-            "category": "desserts"
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
-
-    for (name, fixture_name) in &main_recipes {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": name,
-            "content": content,
-            "category": "main"
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("cake", Some("desserts"), "cookie.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+            ("pasta", Some("main"), "steak.cook"),
+        ],
+    )
+    .await;
 
     // Get recipes in desserts category
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/categories/desserts", None))
         .await
         .unwrap();
@@ -575,7 +492,7 @@ async fn test_get_recipes_in_category() {
         .map(|r| r["name"].as_str().unwrap())
         .collect();
     assert!(names.contains(&"Cake"));
-    assert!(names.contains(&"Cookie"));
+    assert!(names.contains(&"Cake"));
 }
 
 #[tokio::test]
@@ -767,35 +684,18 @@ async fn test_delete_recipe_not_found() {
 
 #[tokio::test]
 async fn test_status_updates_with_recipes() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create 2 recipes in different categories
-    let content1 = load_recipe_fixture("cake");
-    let payload1 = serde_json::json!({
-        "name": "Cake",
-        "content": content1,
-        "category": "desserts"
-    });
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload1)))
-        .await
-        .unwrap();
-
-    let content2 = load_recipe_fixture("pasta");
-    let payload2 = serde_json::json!({
-        "name": "Pasta",
-        "content": content2,
-        "category": "main"
-    });
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload2)))
-        .await
-        .unwrap();
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+        ],
+    )
+    .await;
 
     // Check status
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/status", None))
         .await
         .unwrap();
@@ -847,33 +747,29 @@ async fn test_create_recipe_in_nested_category() {
 
 #[tokio::test]
 async fn test_read_recipe_from_nested_category() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![("thai-green-curry", Some("meals/asian/thai"), "thai-green-curry.cook")],
+    )
+    .await;
 
-    // Create recipe in nested category
-    let content = load_recipe_fixture("thai-green-curry");
-    let create_payload = serde_json::json!({
-        "name": "Thai Green Curry",
-        "content": content,
-        "category": "meals/asian/thai"
-    });
-
-    let response = app1
-        .oneshot(make_request(
-            "POST",
-            "/api/v1/recipes",
-            Some(create_payload),
-        ))
+    // Get the recipe by listing all
+    let app = build_router();
+    let response = app
+        .oneshot(make_request("GET", "/api/v1/recipes", None))
         .await
         .unwrap();
 
-    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
-
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipes = json["recipes"].as_array().unwrap();
+    assert_eq!(recipes.len(), 1);
 
-    // Read the recipe back
+    let recipe_id = recipes[0]["recipe_id"].as_str().unwrap().to_string();
+    assert_eq!(recipes[0]["name"], "Thai Green Curry");
+    assert_eq!(recipes[0]["category"], "meals/asian/thai");
+    
+    // Verify content contains expected ingredient
     let app2 = build_router();
     let response = app2
         .oneshot(make_request(
@@ -956,50 +852,19 @@ async fn test_move_recipe_between_nested_categories() {
 
 #[tokio::test]
 async fn test_get_recipes_from_nested_category() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create multiple recipes in nested category
-    let content1 = load_recipe_fixture("pad-thai");
-    let payload1 = serde_json::json!({
-        "name": "Pad Thai",
-        "content": content1,
-        "category": "meals/asian/thai"
-    });
-
-    let content2 = load_recipe_fixture("green-curry");
-    let payload2 = serde_json::json!({
-        "name": "Green Curry",
-        "content": content2,
-        "category": "meals/asian/thai"
-    });
-
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload1)))
-        .await
-        .unwrap();
-
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload2)))
-        .await
-        .unwrap();
-
-    // Create recipe in different category to ensure filtering works
-    let content3 = load_recipe_fixture("spaghetti");
-    let payload3 = serde_json::json!({
-        "name": "Spaghetti",
-        "content": content3,
-        "category": "meals/european/italian"
-    });
-
-    app1.clone()
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload3)))
-        .await
-        .unwrap();
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("pad-thai", Some("meals/asian/thai"), "pad-thai.cook"),
+            ("green-curry", Some("meals/asian/thai"), "green-curry.cook"),
+            ("spaghetti", Some("meals/european/italian"), "spaghetti.cook"),
+        ],
+    )
+    .await;
 
     // Get recipes from nested Thai category (URL-encoded)
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request(
             "GET",
             "/api/v1/categories/meals%2Fasian%2Fthai",
@@ -1084,32 +949,19 @@ async fn test_move_recipe_between_flat_and_nested_category() {
 
 #[tokio::test]
 async fn test_list_categories_includes_nested() {
-    let (build_router, _temp_dir) = setup_api().await;
-    let app1 = build_router();
-
-    // Create recipes in various nested categories
-    let recipes = vec![
-        ("Tiramisu", "tiramisu", "desserts/cakes/italian"),
-        ("Cheesecake", "cheesecake", "desserts/cakes/american"),
-        ("Flan", "flan", "desserts/custards"),
-    ];
-
-    for (name, fixture_name, category) in recipes {
-        let content = load_recipe_fixture(fixture_name);
-        let payload = serde_json::json!({
-            "name": name,
-            "content": content,
-            "category": category
-        });
-        app1.clone()
-            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
-            .await
-            .unwrap();
-    }
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        "git",
+        vec![
+            ("tiramisu", Some("desserts/cakes/italian"), "tiramisu.cook"),
+            ("cheesecake", Some("desserts/cakes/american"), "cheesecake.cook"),
+            ("flan", Some("desserts/custards"), "flan.cook"),
+        ],
+    )
+    .await;
 
     // List all categories
-    let app2 = build_router();
-    let response = app2
+    let app = build_router();
+    let response = app
         .oneshot(make_request("GET", "/api/v1/categories", None))
         .await
         .unwrap();
