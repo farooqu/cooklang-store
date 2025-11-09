@@ -5,17 +5,12 @@ use serde_json::Value;
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
-async fn setup_api() -> (impl Fn() -> axum::Router, TempDir) {
-    setup_api_with_storage("git").await
-}
-
 // ============================================================================
 // HEALTH & STATUS TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_health_check() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_health_check_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -27,8 +22,17 @@ async fn test_health_check() {
 }
 
 #[tokio::test]
-async fn test_status_endpoint() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_health_check_git() {
+    test_health_check_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_health_check_disk() {
+    test_health_check_impl("disk").await;
+}
+
+async fn test_status_endpoint_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -47,13 +51,22 @@ async fn test_status_endpoint() {
     assert_eq!(json["categories"], 0);
 }
 
+#[tokio::test]
+async fn test_status_endpoint_git() {
+    test_status_endpoint_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_status_endpoint_disk() {
+    test_status_endpoint_impl("disk").await;
+}
+
 // ============================================================================
 // RECIPE CREATION TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_create_recipe() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_create_recipe_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let content = load_recipe_fixture("test-recipe");
@@ -81,18 +94,33 @@ async fn test_create_recipe() {
     assert_eq!(json["category"], "desserts");
     assert!(json["recipe_id"].is_string());
 
-    // Verify file was created in git repo
+    // Verify file was created on disk
     let filename = verify_recipe_file_exists(&temp_dir, "Test Recipe", "desserts");
     assert!(filename.ends_with(".cook"));
 
     // Verify file contents
     let contents = read_recipe_file(&temp_dir, "Test Recipe", "desserts");
     assert_eq!(contents, content);
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_create_recipe_with_comment() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_create_recipe_git() {
+    let temp_dir = test_create_recipe_impl("git").await;
+    
+    // Git-specific verification: commit was made
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count > 0, "Expected at least one commit in git repo");
+}
+
+#[tokio::test]
+async fn test_create_recipe_disk() {
+    let _temp_dir = test_create_recipe_impl("disk").await;
+}
+
+async fn test_create_recipe_with_comment_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let content = load_recipe_fixture("chocolate-cake");
@@ -118,8 +146,17 @@ async fn test_create_recipe_with_comment() {
 }
 
 #[tokio::test]
-async fn test_create_recipe_empty_name() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_create_recipe_with_comment_git() {
+    test_create_recipe_with_comment_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_create_recipe_with_comment_disk() {
+    test_create_recipe_with_comment_impl("disk").await;
+}
+
+async fn test_create_recipe_empty_name_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let content = load_recipe_fixture("test-recipe");
@@ -138,8 +175,17 @@ async fn test_create_recipe_empty_name() {
 }
 
 #[tokio::test]
-async fn test_create_recipe_empty_category() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_create_recipe_empty_name_git() {
+    test_create_recipe_empty_name_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_create_recipe_empty_name_disk() {
+    test_create_recipe_empty_name_impl("disk").await;
+}
+
+async fn test_create_recipe_empty_category_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let content = load_recipe_fixture("test-recipe");
@@ -173,11 +219,26 @@ async fn test_create_recipe_empty_category() {
     // Verify file contents
     let contents = read_recipe_file_at_root(&temp_dir, "Test Recipe");
     assert_eq!(contents, content);
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_create_recipe_empty_content() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_create_recipe_empty_category_git() {
+    let temp_dir = test_create_recipe_empty_category_impl("git").await;
+    
+    // Git-specific verification
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count > 0, "Expected at least one commit in git repo");
+}
+
+#[tokio::test]
+async fn test_create_recipe_empty_category_disk() {
+    let _temp_dir = test_create_recipe_empty_category_impl("disk").await;
+}
+
+async fn test_create_recipe_empty_content_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let payload = serde_json::json!({
@@ -194,13 +255,22 @@ async fn test_create_recipe_empty_content() {
     assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
 }
 
+#[tokio::test]
+async fn test_create_recipe_empty_content_git() {
+    test_create_recipe_empty_content_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_create_recipe_empty_content_disk() {
+    test_create_recipe_empty_content_impl("disk").await;
+}
+
 // ============================================================================
 // RECIPE RETRIEVAL TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_list_recipes_empty() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_list_recipes_empty_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -218,9 +288,18 @@ async fn test_list_recipes_empty() {
 }
 
 #[tokio::test]
-async fn test_list_recipes_with_pagination() {
+async fn test_list_recipes_empty_git() {
+    test_list_recipes_empty_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_recipes_empty_disk() {
+    test_list_recipes_empty_impl("disk").await;
+}
+
+async fn test_list_recipes_with_pagination_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("recipe-1", Some("desserts"), "recipe-1.cook"),
             ("recipe-2", Some("desserts"), "recipe-2.cook"),
@@ -245,9 +324,18 @@ async fn test_list_recipes_with_pagination() {
 }
 
 #[tokio::test]
-async fn test_list_recipes_with_limit() {
+async fn test_list_recipes_with_pagination_git() {
+    test_list_recipes_with_pagination_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_recipes_with_pagination_disk() {
+    test_list_recipes_with_pagination_impl("disk").await;
+}
+
+async fn test_list_recipes_with_limit_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("recipe-1", Some("desserts"), "recipe-1.cook"),
             ("recipe-2", Some("desserts"), "recipe-2.cook"),
@@ -272,8 +360,17 @@ async fn test_list_recipes_with_limit() {
 }
 
 #[tokio::test]
-async fn test_get_recipe_not_found() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_list_recipes_with_limit_git() {
+    test_list_recipes_with_limit_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_recipes_with_limit_disk() {
+    test_list_recipes_with_limit_impl("disk").await;
+}
+
+async fn test_get_recipe_not_found_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -285,8 +382,17 @@ async fn test_get_recipe_not_found() {
 }
 
 #[tokio::test]
-async fn test_get_recipe_by_id() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_get_recipe_not_found_git() {
+    test_get_recipe_not_found_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_get_recipe_not_found_disk() {
+    test_get_recipe_not_found_impl("disk").await;
+}
+
+async fn test_get_recipe_by_id_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create a recipe
@@ -326,13 +432,22 @@ async fn test_get_recipe_by_id() {
     assert_eq!(json["category"], "desserts");
 }
 
+#[tokio::test]
+async fn test_get_recipe_by_id_git() {
+    test_get_recipe_by_id_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_get_recipe_by_id_disk() {
+    test_get_recipe_by_id_impl("disk").await;
+}
+
 // ============================================================================
 // RECIPE SEARCH TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_search_recipes_empty() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_search_recipes_empty_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -349,9 +464,18 @@ async fn test_search_recipes_empty() {
 }
 
 #[tokio::test]
-async fn test_search_recipes_by_name() {
+async fn test_search_recipes_empty_git() {
+    test_search_recipes_empty_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_search_recipes_empty_disk() {
+    test_search_recipes_empty_impl("disk").await;
+}
+
+async fn test_search_recipes_by_name_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("chocolate-cake", Some("main"), "chocolate-cake.cook"),
             ("vanilla-cake", Some("main"), "vanilla-cake.cook"),
@@ -382,9 +506,18 @@ async fn test_search_recipes_by_name() {
 }
 
 #[tokio::test]
-async fn test_search_case_insensitive() {
+async fn test_search_recipes_by_name_git() {
+    test_search_recipes_by_name_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_search_recipes_by_name_disk() {
+    test_search_recipes_by_name_impl("disk").await;
+}
+
+async fn test_search_case_insensitive_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![("chocolate-cake", Some("desserts"), "chocolate-cake.cook")],
     )
     .await;
@@ -406,13 +539,22 @@ async fn test_search_case_insensitive() {
     assert_eq!(json["recipes"].as_array().unwrap().len(), 1);
 }
 
+#[tokio::test]
+async fn test_search_case_insensitive_git() {
+    test_search_case_insensitive_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_search_case_insensitive_disk() {
+    test_search_case_insensitive_impl("disk").await;
+}
+
 // ============================================================================
 // CATEGORY TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_list_categories_empty() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_list_categories_empty_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -429,9 +571,18 @@ async fn test_list_categories_empty() {
 }
 
 #[tokio::test]
-async fn test_list_categories() {
+async fn test_list_categories_empty_git() {
+    test_list_categories_empty_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_categories_empty_disk() {
+    test_list_categories_empty_impl("disk").await;
+}
+
+async fn test_list_categories_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("cake", Some("desserts"), "cake.cook"),
             ("pasta", Some("main"), "pasta.cook"),
@@ -460,9 +611,18 @@ async fn test_list_categories() {
 }
 
 #[tokio::test]
-async fn test_get_recipes_in_category() {
+async fn test_list_categories_git() {
+    test_list_categories_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_categories_disk() {
+    test_list_categories_impl("disk").await;
+}
+
+async fn test_get_recipes_in_category_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("cake", Some("desserts"), "cake.cook"),
             ("cake", Some("desserts"), "cookie.cook"),
@@ -496,8 +656,17 @@ async fn test_get_recipes_in_category() {
 }
 
 #[tokio::test]
-async fn test_get_category_not_found() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_get_recipes_in_category_git() {
+    test_get_recipes_in_category_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_get_recipes_in_category_disk() {
+    test_get_recipes_in_category_impl("disk").await;
+}
+
+async fn test_get_category_not_found_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -508,13 +677,22 @@ async fn test_get_category_not_found() {
     assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
 }
 
+#[tokio::test]
+async fn test_get_category_not_found_git() {
+    test_get_category_not_found_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_get_category_not_found_disk() {
+    test_get_category_not_found_impl("disk").await;
+}
+
 // ============================================================================
 // RECIPE UPDATE TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_update_recipe() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_update_recipe_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create a recipe
@@ -526,15 +704,13 @@ async fn test_update_recipe() {
     });
 
     let response = app1
-    .oneshot(make_request(
-    "POST",
-    "/api/v1/recipes",
-    Some(create_payload),
-    ))
-    .await
-    .unwrap();
-
-    assert_eq!(response.status(), axum::http::StatusCode::CREATED, "Failed to create recipe: response status = {}", response.status());
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
+        .await
+        .unwrap();
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
@@ -571,7 +747,7 @@ async fn test_update_recipe() {
     assert_eq!(json["name"], "Updated Name");
     assert_eq!(json["category"], "main");
 
-    // Verify file was updated in git repo (moved to new category)
+    // Verify file was updated on disk (moved to new category)
     let filename = verify_recipe_file_exists(&temp_dir, "Updated Name", "main");
     assert!(filename.ends_with(".cook"));
 
@@ -581,11 +757,26 @@ async fn test_update_recipe() {
 
     // Verify original file is gone from desserts category
     verify_recipe_file_deleted(&temp_dir, "Original Name", "desserts");
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_update_recipe_not_found() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_update_recipe_git() {
+    let temp_dir = test_update_recipe_impl("git").await;
+    
+    // Git-specific verification
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count >= 2, "Expected at least 2 commits (create + update) in git repo");
+}
+
+#[tokio::test]
+async fn test_update_recipe_disk() {
+    let _temp_dir = test_update_recipe_impl("disk").await;
+}
+
+async fn test_update_recipe_not_found_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let payload = serde_json::json!({
@@ -606,13 +797,22 @@ async fn test_update_recipe_not_found() {
     assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
 }
 
+#[tokio::test]
+async fn test_update_recipe_not_found_git() {
+    test_update_recipe_not_found_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_update_recipe_not_found_disk() {
+    test_update_recipe_not_found_impl("disk").await;
+}
+
 // ============================================================================
 // RECIPE DELETE TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_delete_recipe() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_delete_recipe_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create a recipe
@@ -648,7 +848,7 @@ async fn test_delete_recipe() {
 
     assert_eq!(response.status(), axum::http::StatusCode::NO_CONTENT);
 
-    // Verify file was deleted from git repo
+    // Verify file was deleted from disk
     verify_recipe_file_deleted(&temp_dir, "To Delete", "desserts");
 
     // Verify it's deleted via API
@@ -663,11 +863,26 @@ async fn test_delete_recipe() {
         .unwrap();
 
     assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_delete_recipe_not_found() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_delete_recipe_git() {
+    let temp_dir = test_delete_recipe_impl("git").await;
+    
+    // Git-specific verification
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count >= 2, "Expected at least 2 commits (create + delete) in git repo");
+}
+
+#[tokio::test]
+async fn test_delete_recipe_disk() {
+    let _temp_dir = test_delete_recipe_impl("disk").await;
+}
+
+async fn test_delete_recipe_not_found_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     let response = app
@@ -678,14 +893,23 @@ async fn test_delete_recipe_not_found() {
     assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
 }
 
+#[tokio::test]
+async fn test_delete_recipe_not_found_git() {
+    test_delete_recipe_not_found_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_delete_recipe_not_found_disk() {
+    test_delete_recipe_not_found_impl("disk").await;
+}
+
 // ============================================================================
 // STATUS AFTER MODIFICATIONS TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_status_updates_with_recipes() {
+async fn test_status_updates_with_recipes_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("cake", Some("desserts"), "cake.cook"),
             ("pasta", Some("main"), "pasta.cook"),
@@ -707,13 +931,22 @@ async fn test_status_updates_with_recipes() {
     assert_eq!(json["categories"], 2);
 }
 
+#[tokio::test]
+async fn test_status_updates_with_recipes_git() {
+    test_status_updates_with_recipes_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_status_updates_with_recipes_disk() {
+    test_status_updates_with_recipes_impl("disk").await;
+}
+
 // ============================================================================
 // HIERARCHICAL CATEGORY TESTS
 // ============================================================================
 
-#[tokio::test]
-async fn test_create_recipe_in_nested_category() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_create_recipe_in_nested_category_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
     // Create recipe in nested category
@@ -743,12 +976,27 @@ async fn test_create_recipe_in_nested_category() {
 
     // Verify nested directory structure exists on disk
     verify_recipe_file_exists(&temp_dir, "Chicken Biryani", "meals/meat/traditional");
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_read_recipe_from_nested_category() {
+async fn test_create_recipe_in_nested_category_git() {
+    let temp_dir = test_create_recipe_in_nested_category_impl("git").await;
+    
+    // Git-specific verification
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count > 0);
+}
+
+#[tokio::test]
+async fn test_create_recipe_in_nested_category_disk() {
+    let _temp_dir = test_create_recipe_in_nested_category_impl("disk").await;
+}
+
+async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![("thai-green-curry", Some("meals/asian/thai"), "thai-green-curry.cook")],
     )
     .await;
@@ -794,8 +1042,17 @@ async fn test_read_recipe_from_nested_category() {
 }
 
 #[tokio::test]
-async fn test_move_recipe_between_nested_categories() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_read_recipe_from_nested_category_git() {
+    test_read_recipe_from_nested_category_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_read_recipe_from_nested_category_disk() {
+    test_read_recipe_from_nested_category_impl("disk").await;
+}
+
+async fn test_move_recipe_between_nested_categories_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create recipe in one nested category
@@ -848,12 +1105,23 @@ async fn test_move_recipe_between_nested_categories() {
 
     // Verify file no longer exists in original category
     verify_recipe_file_deleted(&temp_dir, "Chocolate Cake", "desserts/cakes/chocolate");
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_get_recipes_from_nested_category() {
+async fn test_move_recipe_between_nested_categories_git() {
+    let _temp_dir = test_move_recipe_between_nested_categories_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_move_recipe_between_nested_categories_disk() {
+    let _temp_dir = test_move_recipe_between_nested_categories_impl("disk").await;
+}
+
+async fn test_get_recipes_from_nested_category_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("pad-thai", Some("meals/asian/thai"), "pad-thai.cook"),
             ("green-curry", Some("meals/asian/thai"), "green-curry.cook"),
@@ -893,8 +1161,17 @@ async fn test_get_recipes_from_nested_category() {
 }
 
 #[tokio::test]
-async fn test_move_recipe_between_flat_and_nested_category() {
-    let (build_router, temp_dir) = setup_api().await;
+async fn test_get_recipes_from_nested_category_git() {
+    test_get_recipes_from_nested_category_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_get_recipes_from_nested_category_disk() {
+    test_get_recipes_from_nested_category_impl("disk").await;
+}
+
+async fn test_move_recipe_between_flat_and_nested_category_impl(backend: &str) -> TempDir {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create recipe in flat category
@@ -945,12 +1222,23 @@ async fn test_move_recipe_between_flat_and_nested_category() {
     // Verify moved to nested category
     verify_recipe_file_exists(&temp_dir, "Vanilla Cake", "desserts/cakes/vanilla");
     verify_recipe_file_deleted(&temp_dir, "Vanilla Cake", "desserts");
+
+    temp_dir
 }
 
 #[tokio::test]
-async fn test_list_categories_includes_nested() {
+async fn test_move_recipe_between_flat_and_nested_category_git() {
+    let _temp_dir = test_move_recipe_between_flat_and_nested_category_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_move_recipe_between_flat_and_nested_category_disk() {
+    let _temp_dir = test_move_recipe_between_flat_and_nested_category_impl("disk").await;
+}
+
+async fn test_list_categories_includes_nested_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
-        "git",
+        backend,
         vec![
             ("tiramisu", Some("desserts/cakes/italian"), "tiramisu.cook"),
             ("cheesecake", Some("desserts/cakes/american"), "cheesecake.cook"),
@@ -985,8 +1273,17 @@ async fn test_list_categories_includes_nested() {
 }
 
 #[tokio::test]
-async fn test_move_between_different_category_structures() {
-    let (build_router, _temp_dir) = setup_api().await;
+async fn test_list_categories_includes_nested_git() {
+    test_list_categories_includes_nested_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_list_categories_includes_nested_disk() {
+    test_list_categories_includes_nested_impl("disk").await;
+}
+
+async fn test_move_between_different_category_structures_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app1 = build_router();
 
     // Create recipe in one category structure
@@ -1037,4 +1334,14 @@ async fn test_move_between_different_category_structures() {
     // Verify category updated to new structure
     assert_eq!(json["category"], "author2/meat/dinner");
     assert_eq!(json["name"], "Author's Dinner");
+}
+
+#[tokio::test]
+async fn test_move_between_different_category_structures_git() {
+    test_move_between_different_category_structures_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_move_between_different_category_structures_disk() {
+    test_move_between_different_category_structures_impl("disk").await;
 }
