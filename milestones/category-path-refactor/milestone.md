@@ -82,9 +82,14 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ---
 
-## Phase 3: API Response Layer ⏳ IN PROGRESS
+## Phase 3: API Response Layer ✅ COMPLETE
 
-See: `milestones/category-path-refactor/phases/03-api-response-layer.md`
+**Completed** (Nov 9, 2025):
+- Updated RecipeResponse with camelCase fields: recipeId, recipeName, path, fileName, content, description
+- Updated RecipeSummary with camelCase fields: recipeId, recipeName, path
+- Removed deprecated `name` and `category` fields from response structs
+- Updated CreateRecipeRequest and UpdateRecipeRequest with correct field sets
+- All serde attributes properly configured for camelCase JSON serialization
 
 ---
 
