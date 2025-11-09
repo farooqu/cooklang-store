@@ -1617,3 +1617,275 @@ async fn test_id_change_on_rename_scenario_git() {
 async fn test_id_change_on_rename_scenario_disk() {
     test_id_change_on_rename_scenario_impl("disk").await;
 }
+
+// ============================================================================
+// FIND BY NAME TESTS
+// ============================================================================
+
+async fn test_find_recipe_by_name_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        backend,
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+            (
+                "chicken-biryani",
+                Some("main/indian"),
+                "chicken-biryani.cook",
+            ),
+        ],
+    )
+    .await;
+
+    let app = build_router();
+
+    // Test exact match - search for "Cake" which is in the fixtures
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-name?q=Cake",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert!(json["recipes"].is_array());
+    assert!(json["recipes"].as_array().unwrap().iter().any(|recipe| {
+        recipe["recipeName"]
+            .as_str()
+            .map(|name| name.contains("Cake"))
+            .unwrap_or(false)
+    }));
+
+    // Test partial match (case-insensitive) - search for "pasta"
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-name?q=pasta",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert!(json["recipes"].is_array());
+    assert!(json["recipes"].as_array().unwrap().len() > 0);
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_name_git() {
+    test_find_recipe_by_name_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_name_disk() {
+    test_find_recipe_by_name_impl("disk").await;
+}
+
+async fn test_find_recipe_by_name_pagination_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        backend,
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+            (
+                "chicken-biryani",
+                Some("main/indian"),
+                "chicken-biryani.cook",
+            ),
+        ],
+    )
+    .await;
+
+    let app = build_router();
+
+    // Test with limit
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-name?q=test&limit=1",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert!(json["recipes"].is_array());
+    assert!(json["recipes"].as_array().unwrap().len() <= 1);
+    assert_eq!(json["pagination"]["limit"], 1);
+
+    // Test with offset
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-name?q=test&offset=1",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_name_pagination_git() {
+    test_find_recipe_by_name_pagination_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_name_pagination_disk() {
+    test_find_recipe_by_name_pagination_impl("disk").await;
+}
+
+// ============================================================================
+// FIND BY PATH TESTS
+// ============================================================================
+
+async fn test_find_recipe_by_path_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        backend,
+        vec![
+            ("cake", Some("desserts"), "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+            (
+                "chicken-biryani",
+                Some("main/indian"),
+                "chicken-biryani.cook",
+            ),
+        ],
+    )
+    .await;
+
+    let app = build_router();
+
+    // Test find recipe at specific path
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-path?path=main",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert!(json.is_array());
+    assert!(json.as_array().unwrap().iter().all(|recipe| {
+        recipe["path"]
+            .as_str()
+            .map(|p| p == "main")
+            .unwrap_or(false)
+    }));
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_git() {
+    test_find_recipe_by_path_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_disk() {
+    test_find_recipe_by_path_impl("disk").await;
+}
+
+async fn test_find_recipe_by_path_root_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
+        backend,
+        vec![
+            ("cake", None, "cake.cook"),
+            ("pasta", Some("main"), "pasta.cook"),
+        ],
+    )
+    .await;
+
+    let app = build_router();
+
+    // Test root path with empty string
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-path?path=",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert!(json.is_array());
+    // Should find recipes in root (path field may be null or empty string for root)
+    assert!(json.as_array().unwrap().iter().any(|recipe| {
+        recipe["path"].is_null()
+            || recipe["path"]
+                .as_str()
+                .map(|p| p.is_empty())
+                .unwrap_or(false)
+    }));
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_root_git() {
+    test_find_recipe_by_path_root_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_root_disk() {
+    test_find_recipe_by_path_root_impl("disk").await;
+}
+
+async fn test_find_recipe_by_path_not_found_impl(backend: &str) {
+    let (build_router, _temp_dir) =
+        setup_api_with_seeded_fixtures(backend, vec![("cake", Some("desserts"), "cake.cook")])
+            .await;
+
+    let app = build_router();
+
+    // Test non-existent path
+    let response = app
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/find-by-path?path=nonexistent",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    // Should return empty array instead of 404
+    assert!(json.is_array());
+    assert_eq!(json.as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_not_found_git() {
+    test_find_recipe_by_path_not_found_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_find_recipe_by_path_not_found_disk() {
+    test_find_recipe_by_path_not_found_impl("disk").await;
+}

@@ -69,8 +69,7 @@ pub async fn create_recipe(
     let path = payload
         .path
         .as_deref()
-        .map(|p| if p.trim().is_empty() { None } else { Some(p) })
-        .flatten();
+        .and_then(|p| if p.trim().is_empty() { None } else { Some(p) });
 
     // Create recipe
     match repo
@@ -261,8 +260,7 @@ pub async fn update_recipe(
     let path = payload
         .path
         .as_deref()
-        .map(|p| if p.trim().is_empty() { None } else { Some(p) })
-        .flatten();
+        .and_then(|p| if p.trim().is_empty() { None } else { Some(p) });
 
     match repo
         .update_with_author_and_comment(
@@ -375,34 +373,26 @@ pub struct FindByPathQuery {
 pub async fn find_recipe_by_path(
     State(repo): State<Arc<RecipeRepository>>,
     Query(params): Query<FindByPathQuery>,
-) -> Result<Json<RecipeSummary>, (StatusCode, Json<ErrorResponse>)> {
+) -> Result<Json<Vec<RecipeSummary>>, (StatusCode, Json<ErrorResponse>)> {
     let path = params.path.as_deref().unwrap_or("");
 
-    // Try to find a recipe in the specified path
-    // Since we don't have a direct lookup by path, search all recipes
+    // Find all recipes at the specified path
     let all_recipes = repo.list_all();
 
-    let matching = all_recipes
+    let matching: Vec<RecipeSummary> = all_recipes
         .into_iter()
-        .find(|recipe| recipe.category.as_deref().unwrap_or("") == path);
-
-    match matching {
-        Some(recipe) => {
+        .filter(|recipe| recipe.category.as_deref().unwrap_or("") == path)
+        .map(|recipe| {
             let recipe_id = generate_recipe_id(&recipe.git_path);
-            Ok(Json(RecipeSummary {
+            RecipeSummary {
                 recipe_id,
                 recipe_name: recipe.name,
                 path: recipe.category,
-            }))
-        }
-        None => Err((
-            StatusCode::NOT_FOUND,
-            Json(ErrorResponse::new(
-                "not_found",
-                format!("No recipe found at path '{}'", path),
-            )),
-        )),
-    }
+            }
+        })
+        .collect();
+
+    Ok(Json(matching))
 }
 
 /// List all categories

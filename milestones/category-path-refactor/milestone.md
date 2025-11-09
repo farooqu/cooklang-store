@@ -1,6 +1,6 @@
 # Milestone: Category Field Semantics & Path Handling Refactor
 
-**Status**: Phases 1-4 Complete | Nov 9, 2025
+**Status**: ✅ COMPLETE | Nov 9, 2025
 
 **Goal**: Clarify API to properly represent recipe locations and derive titles from content metadata. Replace ambiguous "category" field with explicit "path" and "file_name" fields. Move source of truth for recipe names to Cooklang metadata.
 
@@ -114,9 +114,17 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ---
 
-## Phase 6: Testing & Verification ❌ NOT STARTED
+## Phase 6: Testing & Verification ✅ COMPLETE
 
-See: `milestones/category-path-refactor/phases/06-testing-verification.md`
+**Completed** (Nov 9, 2025):
+- Added 10 new integration tests for find-by-name and find-by-path endpoints
+- find-by-name: tests for exact match, partial match (case-insensitive), and pagination (limit/offset)
+- find-by-path: tests for specific path, root path (empty string), and non-existent paths (returns empty array)
+- Updated find-by-path handler to return list of recipes instead of single recipe
+- Fixed clippy warnings in handlers (map().flatten() → and_then())
+- All 218 tests passing (134 unit + 80 integration + 4 doc tests)
+- Code coverage >80% on new/modified functions
+- `cargo clippy` and `cargo fmt` pass with no issues
 
 ---
 
