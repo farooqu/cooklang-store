@@ -195,22 +195,24 @@ milestones/
      - Updated API.md documentation
      ```
    - Delete the phase checklist file from `phases/` directory
-   - Commit both changes together:
+   - Stage all changes together and commit:
    ```bash
    git add milestones/{milestone}/milestone.md
    git rm milestones/{milestone}/phases/{phase-number}-{description}.md
    git commit -m "[{milestone-name}] Phase {N} complete - delete phase checklist"
    ```
+    - **Important**: Always use `git add -A` when committing to ensure deleted files are included, OR use individual `git rm` commands for explicit control
 
 2. When a task is **100% complete**:
-   - Update `milestone.md` to mark task as ✅ COMPLETE (if task-level tracking is used)
-   - Delete the task checklist file from `tasks/` directory
-   - Commit both changes together:
-   ```bash
-   git add milestones/{milestone}/milestone.md
-   git rm milestones/{milestone}/tasks/TASK-{name}.md
-   git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
-   ```
+- Update `milestone.md` to mark task as ✅ COMPLETE (if task-level tracking is used)
+- Delete the task checklist file from `tasks/` directory
+- Stage all changes together and commit:
+```bash
+git add milestones/{milestone}/milestone.md
+git rm milestones/{milestone}/tasks/TASK-{name}.md
+git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
+```
+    - **Important**: Always use `git add -A` when committing to ensure deleted files are included, OR use individual `git rm` commands for explicit control
 
 3. Keep `milestone.md` in the repo as historical record (never delete - it shows what was accomplished in each phase)
 4. CRITICAL: Do NOT update milestone.md and delete the checklist files in separate commits - they must be together
