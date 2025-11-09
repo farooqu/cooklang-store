@@ -1,203 +1,12 @@
-use cooklang_backend::{api, repository::RecipeRepository};
+mod common;
+
+use common::*;
 use serde_json::Value;
-use std::fs;
-use std::sync::Arc;
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
 async fn setup_api() -> (impl Fn() -> axum::Router, TempDir) {
-    let temp_dir = TempDir::new().unwrap();
-    let repo = RecipeRepository::new(temp_dir.path())
-        .await
-        .expect("Failed to create repo");
-
-    let repo_arc = Arc::new(repo);
-
-    let build_router = move || api::build_router(repo_arc.clone());
-
-    (build_router, temp_dir)
-}
-
-fn make_request(
-    method: &str,
-    uri: &str,
-    body: Option<serde_json::Value>,
-) -> axum::http::Request<axum::body::Body> {
-    let mut builder = axum::http::Request::builder().method(method).uri(uri);
-
-    if let Some(json_body) = body {
-        builder = builder.header("content-type", "application/json");
-        builder
-            .body(axum::body::Body::from(json_body.to_string()))
-            .unwrap()
-    } else {
-        builder.body(axum::body::Body::empty()).unwrap()
-    }
-}
-
-async fn extract_response_body(response: axum::http::Response<axum::body::Body>) -> String {
-    let body_bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    String::from_utf8(body_bytes.to_vec()).unwrap()
-}
-
-// ============================================================================
-// GIT REPOSITORY VERIFICATION HELPERS
-// ============================================================================
-
-fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
-    let recipes_dir = if category.contains('/') {
-        // Handle nested categories: "meals/meat/traditional"
-        let mut path = temp_dir.path().join("recipes");
-        for part in category.split('/') {
-            path = path.join(part);
-        }
-        path
-    } else {
-        // Single-level category
-        temp_dir.path().join("recipes").join(category)
-    };
-
-    assert!(
-        recipes_dir.exists(),
-        "Category directory doesn't exist: {}",
-        recipes_dir.display()
-    );
-
-    // Find the recipe file (could be recipe-name.cook or recipe-name-2.cook if duplicate)
-    let name_slug = recipe_name.to_lowercase().replace(" ", "-");
-    let files: Vec<_> = fs::read_dir(&recipes_dir)
-        .unwrap()
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            if path.is_file() && path.extension().map(|e| e == "cook").unwrap_or(false) {
-                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-                if filename.starts_with(&name_slug) {
-                    Some(filename)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    assert!(
-        !files.is_empty(),
-        "Recipe file not found for '{}' in category '{}'",
-        recipe_name,
-        category
-    );
-
-    files[0].clone()
-}
-
-fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
-    let filename = verify_recipe_file_exists(temp_dir, recipe_name, category);
-    let path = temp_dir
-        .path()
-        .join("recipes")
-        .join(category)
-        .join(&filename);
-    fs::read_to_string(&path).expect("Failed to read recipe file")
-}
-
-fn verify_recipe_file_exists_at_root(temp_dir: &TempDir, recipe_name: &str) -> String {
-    let recipes_dir = temp_dir.path().join("recipes");
-    assert!(
-        recipes_dir.exists(),
-        "Recipes directory doesn't exist: {}",
-        recipes_dir.display()
-    );
-
-    // Find the recipe file at root (could be recipe-name.cook or recipe-name-2.cook if duplicate)
-    let name_slug = recipe_name.to_lowercase().replace(" ", "-");
-    let files: Vec<_> = fs::read_dir(&recipes_dir)
-        .unwrap()
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            // Only look for direct children (not in subdirectories)
-            if path.is_file() && path.extension().map(|e| e == "cook").unwrap_or(false) {
-                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-                if filename.starts_with(&name_slug) {
-                    Some(filename)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    assert!(
-        !files.is_empty(),
-        "Recipe file not found for '{}' at root of recipes directory",
-        recipe_name
-    );
-
-    files[0].clone()
-}
-
-fn read_recipe_file_at_root(temp_dir: &TempDir, recipe_name: &str) -> String {
-    let filename = verify_recipe_file_exists_at_root(temp_dir, recipe_name);
-    let path = temp_dir.path().join("recipes").join(&filename);
-    fs::read_to_string(&path).expect("Failed to read recipe file at root")
-}
-
-#[allow(dead_code)]
-fn count_git_commits(temp_dir: &TempDir) -> usize {
-    let repo = git2::Repository::open(temp_dir.path()).expect("Failed to open git repo");
-    let mut revwalk = repo.revwalk().unwrap();
-    revwalk.push_head().unwrap();
-    revwalk.count()
-}
-
-fn verify_recipe_file_deleted(temp_dir: &TempDir, recipe_name: &str, category: &str) {
-    let recipes_dir = if category.contains('/') {
-        // Handle nested categories: "meals/meat/traditional"
-        let mut path = temp_dir.path().join("recipes");
-        for part in category.split('/') {
-            path = path.join(part);
-        }
-        path
-    } else {
-        // Single-level category
-        temp_dir.path().join("recipes").join(category)
-    };
-
-    if !recipes_dir.exists() {
-        return; // Category directory removed entirely
-    }
-
-    let name_slug = recipe_name.to_lowercase().replace(" ", "-");
-    let files: Vec<_> = fs::read_dir(&recipes_dir)
-        .unwrap()
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            if path.is_file() && path.extension().map(|e| e == "cook").unwrap_or(false) {
-                let filename = path.file_name().unwrap().to_str().unwrap();
-                if filename.starts_with(&name_slug) {
-                    Some(filename.to_string())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    assert!(
-        files.is_empty(),
-        "Recipe file still exists after deletion: {:?}",
-        files
-    );
+    setup_api_with_storage("git").await
 }
 
 // ============================================================================
@@ -247,9 +56,10 @@ async fn test_create_recipe() {
     let (build_router, temp_dir) = setup_api().await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "Test Recipe",
-        "content": "# Test Recipe\n\n@ingredient{} flour",
+        "content": content.clone(),
         "category": "desserts"
     });
 
@@ -277,7 +87,7 @@ async fn test_create_recipe() {
 
     // Verify file contents
     let contents = read_recipe_file(&temp_dir, "Test Recipe", "desserts");
-    assert_eq!(contents, payload["content"].as_str().unwrap());
+    assert_eq!(contents, content);
 }
 
 #[tokio::test]
@@ -285,9 +95,10 @@ async fn test_create_recipe_with_comment() {
     let (build_router, _temp_dir) = setup_api().await;
     let app = build_router();
 
+    let content = load_recipe_fixture("chocolate-cake");
     let payload = serde_json::json!({
         "name": "Chocolate Cake",
-        "content": "# Chocolate Cake\n\n@flour{2%cup}",
+        "content": content,
         "category": "desserts",
         "comment": "Classic chocolate recipe"
     });
@@ -311,9 +122,10 @@ async fn test_create_recipe_empty_name() {
     let (build_router, _temp_dir) = setup_api().await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "",
-        "content": "# Test\n\n@ingredient{} flour",
+        "content": content,
         "category": "desserts"
     });
 
@@ -330,9 +142,10 @@ async fn test_create_recipe_empty_category() {
     let (build_router, temp_dir) = setup_api().await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "Test Recipe",
-        "content": "# Test\n\n@ingredient{} flour",
+        "content": content.clone(),
         "category": ""
     });
 
@@ -359,7 +172,7 @@ async fn test_create_recipe_empty_category() {
 
     // Verify file contents
     let contents = read_recipe_file_at_root(&temp_dir, "Test Recipe");
-    assert_eq!(contents, payload["content"].as_str().unwrap());
+    assert_eq!(contents, content);
 }
 
 #[tokio::test]
@@ -410,9 +223,10 @@ async fn test_list_recipes_with_pagination() {
     let app1 = build_router();
 
     // Create first recipe
+    let content1 = load_recipe_fixture("recipe-1");
     let payload1 = serde_json::json!({
         "name": "Recipe 1",
-        "content": "# Recipe 1\n\n@flour{1%cup}",
+        "content": content1,
         "category": "desserts"
     });
     app1.clone()
@@ -422,9 +236,10 @@ async fn test_list_recipes_with_pagination() {
 
     // Create second recipe
     let app2 = build_router();
+    let content2 = load_recipe_fixture("recipe-2");
     let payload2 = serde_json::json!({
         "name": "Recipe 2",
-        "content": "# Recipe 2\n\n@flour{2%cup}",
+        "content": content2,
         "category": "desserts"
     });
     app2.clone()
@@ -455,10 +270,12 @@ async fn test_list_recipes_with_limit() {
     let app1 = build_router();
 
     // Create 3 recipes
-    for i in 1..=3 {
+    let fixture_names = vec!["recipe-1", "recipe-2", "test-recipe"];
+    for (i, fixture_name) in fixture_names.iter().enumerate() {
+        let content = load_recipe_fixture(fixture_name);
         let payload = serde_json::json!({
-            "name": format!("Recipe {}", i),
-            "content": format!("# Recipe {}\n\n@flour{{{}%cup}}", i, i),
+            "name": format!("Recipe {}", i + 1),
+            "content": content,
             "category": "desserts"
         });
         app1.clone()
@@ -501,9 +318,10 @@ async fn test_get_recipe_by_id() {
     let app1 = build_router();
 
     // Create a recipe
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "Test Recipe",
-        "content": "# Test Recipe\n\n@flour{2%cup}",
+        "content": content,
         "category": "desserts"
     });
 
@@ -565,12 +383,13 @@ async fn test_search_recipes_by_name() {
 
     // Create recipes with different names
     let recipes = vec![
-        ("Chocolate Cake", "# Chocolate Cake\n\n@flour{2%cup}"),
-        ("Vanilla Cake", "# Vanilla Cake\n\n@flour{2%cup}"),
-        ("Pasta Carbonara", "# Pasta\n\n@pasta{400%g}"),
+        ("Chocolate Cake", "chocolate-cake"),
+        ("Vanilla Cake", "vanilla-cake"),
+        ("Pasta Carbonara", "pasta"),
     ];
 
-    for (name, content) in recipes {
+    for (name, fixture_name) in recipes {
+        let content = load_recipe_fixture(fixture_name);
         let payload = serde_json::json!({
             "name": name,
             "content": content,
@@ -608,9 +427,10 @@ async fn test_search_case_insensitive() {
     let (build_router, _temp_dir) = setup_api().await;
     let app1 = build_router();
 
+    let content = load_recipe_fixture("chocolate-cake");
     let payload = serde_json::json!({
         "name": "Chocolate Cake",
-        "content": "# Chocolate Cake\n\n@flour{2%cup}",
+        "content": content,
         "category": "desserts"
     });
 
@@ -663,11 +483,16 @@ async fn test_list_categories() {
     let app1 = build_router();
 
     // Create recipes in different categories
-    let categories = ["desserts", "main", "appetizers"];
-    for (i, category) in categories.iter().enumerate() {
+    let recipes = vec![
+        ("Cake", "cake", "desserts"),
+        ("Pasta", "pasta", "main"),
+        ("Test Recipe", "test-recipe", "appetizers"),
+    ];
+    for (name, fixture_name, category) in recipes {
+        let content = load_recipe_fixture(fixture_name);
         let payload = serde_json::json!({
-            "name": format!("Recipe {}", i),
-            "content": format!("# Recipe {}\n\n@flour{{{}%cup}}", i, i),
+            "name": name,
+            "content": content,
             "category": category
         });
         app1.clone()
@@ -701,13 +526,14 @@ async fn test_get_recipes_in_category() {
     let app1 = build_router();
 
     // Create recipes in different categories
-    let dessert_recipes = vec!["Cake", "Cookie"];
-    let main_recipes = vec!["Pasta", "Steak"];
+    let dessert_recipes = vec![("Cake", "cake"), ("Cookie", "cake")];
+    let main_recipes = vec![("Pasta", "pasta"), ("Steak", "pasta")];
 
-    for name in &dessert_recipes {
+    for (name, fixture_name) in &dessert_recipes {
+        let content = load_recipe_fixture(fixture_name);
         let payload = serde_json::json!({
             "name": name,
-            "content": format!("# {}\n\n@flour{{1%cup}}", name),
+            "content": content,
             "category": "desserts"
         });
         app1.clone()
@@ -716,10 +542,11 @@ async fn test_get_recipes_in_category() {
             .unwrap();
     }
 
-    for name in &main_recipes {
+    for (name, fixture_name) in &main_recipes {
+        let content = load_recipe_fixture(fixture_name);
         let payload = serde_json::json!({
             "name": name,
-            "content": format!("# {}\n\n@meat{{500%g}}", name),
+            "content": content,
             "category": "main"
         });
         app1.clone()
@@ -774,20 +601,23 @@ async fn test_update_recipe() {
     let app1 = build_router();
 
     // Create a recipe
+    let create_content = load_recipe_fixture("original-name");
     let create_payload = serde_json::json!({
         "name": "Original Name",
-        "content": "# Original\n\n@flour{1%cup}",
+        "content": create_content.clone(),
         "category": "desserts"
     });
 
     let response = app1
-        .oneshot(make_request(
-            "POST",
-            "/api/v1/recipes",
-            Some(create_payload),
-        ))
-        .await
-        .unwrap();
+    .oneshot(make_request(
+    "POST",
+    "/api/v1/recipes",
+    Some(create_payload),
+    ))
+    .await
+    .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED, "Failed to create recipe: response status = {}", response.status());
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
@@ -796,13 +626,14 @@ async fn test_update_recipe() {
     // Verify original file exists
     verify_recipe_file_exists(&temp_dir, "Original Name", "desserts");
     let original_content = read_recipe_file(&temp_dir, "Original Name", "desserts");
-    assert_eq!(original_content, "# Original\n\n@flour{1%cup}");
+    assert_eq!(original_content, create_content);
 
     // Update the recipe
     let app2 = build_router();
+    let update_content = load_recipe_fixture("updated-name");
     let update_payload = serde_json::json!({
         "name": "Updated Name",
-        "content": "# Updated\n\n@flour{2%cup}",
+        "content": update_content.clone(),
         "category": "main"
     });
 
@@ -828,8 +659,8 @@ async fn test_update_recipe() {
     assert!(filename.ends_with(".cook"));
 
     // Verify file contents were updated
-    let updated_content = read_recipe_file(&temp_dir, "Updated Name", "main");
-    assert_eq!(updated_content, update_payload["content"].as_str().unwrap());
+    let updated_file_content = read_recipe_file(&temp_dir, "Updated Name", "main");
+    assert_eq!(updated_file_content, update_content);
 
     // Verify original file is gone from desserts category
     verify_recipe_file_deleted(&temp_dir, "Original Name", "desserts");
@@ -868,9 +699,10 @@ async fn test_delete_recipe() {
     let app1 = build_router();
 
     // Create a recipe
+    let content = load_recipe_fixture("to-delete");
     let payload = serde_json::json!({
         "name": "To Delete",
-        "content": "# Delete me\n\n@flour{1%cup}",
+        "content": content,
         "category": "desserts"
     });
 
@@ -939,9 +771,10 @@ async fn test_status_updates_with_recipes() {
     let app1 = build_router();
 
     // Create 2 recipes in different categories
+    let content1 = load_recipe_fixture("cake");
     let payload1 = serde_json::json!({
         "name": "Cake",
-        "content": "# Cake\n\n@flour{2%cup}",
+        "content": content1,
         "category": "desserts"
     });
     app1.clone()
@@ -949,9 +782,10 @@ async fn test_status_updates_with_recipes() {
         .await
         .unwrap();
 
+    let content2 = load_recipe_fixture("pasta");
     let payload2 = serde_json::json!({
         "name": "Pasta",
-        "content": "# Pasta\n\n@pasta{400%g}",
+        "content": content2,
         "category": "main"
     });
     app1.clone()
@@ -983,9 +817,10 @@ async fn test_create_recipe_in_nested_category() {
     let app = build_router();
 
     // Create recipe in nested category
+    let content = load_recipe_fixture("chicken-biryani");
     let create_payload = serde_json::json!({
         "name": "Chicken Biryani",
-        "content": "# Biryani\n\n@rice{2%cup}\n@chicken{1%kg}",
+        "content": content,
         "category": "meals/meat/traditional"
     });
 
@@ -1012,13 +847,14 @@ async fn test_create_recipe_in_nested_category() {
 
 #[tokio::test]
 async fn test_read_recipe_from_nested_category() {
-    let (build_router, _) = setup_api().await;
+    let (build_router, _temp_dir) = setup_api().await;
     let app1 = build_router();
 
     // Create recipe in nested category
+    let content = load_recipe_fixture("thai-green-curry");
     let create_payload = serde_json::json!({
         "name": "Thai Green Curry",
-        "content": "# Thai Curry\n\n@coconut{400%ml}\n@green-curry-paste{2%tbsp}",
+        "content": content,
         "category": "meals/asian/thai"
     });
 
@@ -1030,6 +866,8 @@ async fn test_read_recipe_from_nested_category() {
         ))
         .await
         .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
@@ -1054,9 +892,9 @@ async fn test_read_recipe_from_nested_category() {
     assert_eq!(json["name"], "Thai Green Curry");
     assert_eq!(json["category"], "meals/asian/thai");
     assert!(json["content"]
-        .as_str()
-        .unwrap()
-        .contains("@coconut{400%ml}"));
+    .as_str()
+    .unwrap()
+    .contains("@coconut-milk{400%ml}"));
 }
 
 #[tokio::test]
@@ -1065,9 +903,10 @@ async fn test_move_recipe_between_nested_categories() {
     let app1 = build_router();
 
     // Create recipe in one nested category
+    let content = load_recipe_fixture("chocolate-cake");
     let create_payload = serde_json::json!({
         "name": "Chocolate Cake",
-        "content": "# Cake\n\n@chocolate{200%g}",
+        "content": content,
         "category": "desserts/cakes/chocolate"
     });
 
@@ -1121,15 +960,17 @@ async fn test_get_recipes_from_nested_category() {
     let app1 = build_router();
 
     // Create multiple recipes in nested category
+    let content1 = load_recipe_fixture("pad-thai");
     let payload1 = serde_json::json!({
         "name": "Pad Thai",
-        "content": "# Pad Thai\n\n@noodles{200%g}",
+        "content": content1,
         "category": "meals/asian/thai"
     });
 
+    let content2 = load_recipe_fixture("green-curry");
     let payload2 = serde_json::json!({
         "name": "Green Curry",
-        "content": "# Curry\n\n@curry-paste{2%tbsp}",
+        "content": content2,
         "category": "meals/asian/thai"
     });
 
@@ -1144,9 +985,10 @@ async fn test_get_recipes_from_nested_category() {
         .unwrap();
 
     // Create recipe in different category to ensure filtering works
+    let content3 = load_recipe_fixture("spaghetti");
     let payload3 = serde_json::json!({
         "name": "Spaghetti",
-        "content": "# Spaghetti\n\n@pasta{400%g}",
+        "content": content3,
         "category": "meals/european/italian"
     });
 
@@ -1191,9 +1033,10 @@ async fn test_move_recipe_between_flat_and_nested_category() {
     let app1 = build_router();
 
     // Create recipe in flat category
+    let content = load_recipe_fixture("vanilla-cake");
     let create_payload = serde_json::json!({
         "name": "Vanilla Cake",
-        "content": "# Vanilla\n\n@flour{2%cup}",
+        "content": content,
         "category": "desserts"
     });
 
@@ -1241,29 +1084,23 @@ async fn test_move_recipe_between_flat_and_nested_category() {
 
 #[tokio::test]
 async fn test_list_categories_includes_nested() {
-    let (build_router, _) = setup_api().await;
+    let (build_router, _temp_dir) = setup_api().await;
     let app1 = build_router();
 
     // Create recipes in various nested categories
-    let payloads = vec![
-        serde_json::json!({
-            "name": "Tiramisu",
-            "content": "# Tiramisu\n\n@mascarpone{500%g}",
-            "category": "desserts/cakes/italian"
-        }),
-        serde_json::json!({
-            "name": "Cheesecake",
-            "content": "# Cheesecake\n\n@cream-cheese{500%g}",
-            "category": "desserts/cakes/american"
-        }),
-        serde_json::json!({
-            "name": "Flan",
-            "content": "# Flan\n\n@caramel{100%ml}",
-            "category": "desserts/custards"
-        }),
+    let recipes = vec![
+        ("Tiramisu", "tiramisu", "desserts/cakes/italian"),
+        ("Cheesecake", "cheesecake", "desserts/cakes/american"),
+        ("Flan", "flan", "desserts/custards"),
     ];
 
-    for payload in payloads {
+    for (name, fixture_name, category) in recipes {
+        let content = load_recipe_fixture(fixture_name);
+        let payload = serde_json::json!({
+            "name": name,
+            "content": content,
+            "category": category
+        });
         app1.clone()
             .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
             .await
@@ -1297,13 +1134,14 @@ async fn test_list_categories_includes_nested() {
 
 #[tokio::test]
 async fn test_move_between_different_category_structures() {
-    let (build_router, _) = setup_api().await;
+    let (build_router, _temp_dir) = setup_api().await;
     let app1 = build_router();
 
     // Create recipe in one category structure
+    let content = load_recipe_fixture("authors-dinner");
     let create_payload = serde_json::json!({
         "name": "Author's Dinner",
-        "content": "# Special dinner\n\n@beef{500%g}",
+        "content": content,
         "category": "author1/dinner/meat"
     });
 

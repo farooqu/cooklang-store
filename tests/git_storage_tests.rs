@@ -57,9 +57,10 @@ async fn test_create_recipe() {
     let (build_router, temp_dir) = setup_api_with_storage("git").await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "Test Recipe",
-        "content": "# Test Recipe\n\n@ingredient{} flour",
+        "content": content.clone(),
         "category": "desserts"
     });
 
@@ -87,7 +88,7 @@ async fn test_create_recipe() {
 
     // Verify file contents
     let contents = read_recipe_file(&temp_dir, "Test Recipe", "desserts");
-    assert_eq!(contents, payload["content"].as_str().unwrap());
+    assert_eq!(contents, content);
 
     // Verify git commit was made
     let commit_count = count_git_commits(&temp_dir);
@@ -125,9 +126,10 @@ async fn test_create_recipe_empty_name() {
     let (build_router, _temp_dir) = setup_api_with_storage("git").await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "",
-        "content": "# Test\n\n@ingredient{} flour",
+        "content": content,
         "category": "desserts"
     });
 
@@ -144,9 +146,10 @@ async fn test_create_recipe_empty_category() {
     let (build_router, temp_dir) = setup_api_with_storage("git").await;
     let app = build_router();
 
+    let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
         "name": "Test Recipe",
-        "content": "# Test\n\n@ingredient{} flour",
+        "content": content,
         "category": ""
     });
 

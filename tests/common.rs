@@ -4,6 +4,16 @@ use std::sync::Arc;
 use tempfile::TempDir;
 
 // ============================================================================
+// FIXTURE LOADING
+// ============================================================================
+
+pub fn load_recipe_fixture(name: &str) -> String {
+    let path = format!("tests/fixtures/{}.cook", name);
+    std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("Failed to load recipe fixture: {}", path))
+}
+
+// ============================================================================
 // TEST SETUP & REQUEST BUILDING
 // ============================================================================
 
@@ -49,7 +59,18 @@ pub async fn extract_response_body(response: axum::http::Response<axum::body::Bo
 // ============================================================================
 
 pub fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
-    let recipes_dir = temp_dir.path().join("recipes").join(category);
+    let recipes_dir = if category.contains('/') {
+        // Handle nested categories: "meals/meat/traditional"
+        let mut path = temp_dir.path().join("recipes");
+        for part in category.split('/') {
+            path = path.join(part);
+        }
+        path
+    } else {
+        // Single-level category
+        temp_dir.path().join("recipes").join(category)
+    };
+
     assert!(
         recipes_dir.exists(),
         "Category directory doesn't exist: {}",
@@ -88,11 +109,17 @@ pub fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category
 
 pub fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
     let filename = verify_recipe_file_exists(temp_dir, recipe_name, category);
-    let path = temp_dir
-        .path()
-        .join("recipes")
-        .join(category)
-        .join(&filename);
+    let path = if category.contains('/') {
+        // Handle nested categories: "meals/meat/traditional"
+        let mut path = temp_dir.path().join("recipes");
+        for part in category.split('/') {
+            path = path.join(part);
+        }
+        path.join(&filename)
+    } else {
+        // Single-level category
+        temp_dir.path().join("recipes").join(category).join(&filename)
+    };
     fs::read_to_string(&path).expect("Failed to read recipe file")
 }
 
@@ -149,7 +176,18 @@ pub fn count_git_commits(temp_dir: &TempDir) -> usize {
 }
 
 pub fn verify_recipe_file_deleted(temp_dir: &TempDir, recipe_name: &str, category: &str) {
-    let recipes_dir = temp_dir.path().join("recipes").join(category);
+    let recipes_dir = if category.contains('/') {
+        // Handle nested categories: "meals/meat/traditional"
+        let mut path = temp_dir.path().join("recipes");
+        for part in category.split('/') {
+            path = path.join(part);
+        }
+        path
+    } else {
+        // Single-level category
+        temp_dir.path().join("recipes").join(category)
+    };
+
     if !recipes_dir.exists() {
         return; // Category directory removed entirely
     }
