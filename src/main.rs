@@ -1,8 +1,22 @@
 use std::path::Path;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use clap::Parser;
 
 use cooklang_backend::{api, repository::RecipeRepository};
+
+#[derive(Parser)]
+#[command(name = "cooklang-store")]
+#[command(about = "A self-hosted service for managing Cooklang recipe files", long_about = None)]
+struct Args {
+    /// Path to the data directory containing recipes
+    #[arg(short, long, required = true)]
+    data_dir: String,
+
+    /// Storage type (disk or git)
+    #[arg(short, long, default_value = "disk")]
+    storage: String,
+}
 
 #[tokio::main]
 async fn main() {
@@ -27,17 +41,17 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Initialize repository from .cooklang directory
-    let repo_path = Path::new(".cooklang");
-    let storage_type =
-        std::env::var("COOKLANG_STORAGE_TYPE").unwrap_or_else(|_| "disk".to_string());
+    // Parse command-line arguments
+    let args = Args::parse();
 
-    let repo = match RecipeRepository::with_storage(repo_path, &storage_type).await {
+    let repo_path = Path::new(&args.data_dir);
+
+    let repo = match RecipeRepository::with_storage(repo_path, &args.storage).await {
         Ok(repo) => {
             tracing::info!(
                 "Initialized recipe repository at {:?} with storage type: {}",
                 repo_path,
-                storage_type
+                args.storage
             );
             Arc::new(repo)
         }

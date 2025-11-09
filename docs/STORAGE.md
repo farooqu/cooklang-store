@@ -26,7 +26,7 @@ Both modes store recipes as `.cook` files on disk with identical content structu
 
 **Configuration**:
 ```bash
-COOKLANG_STORAGE_TYPE=disk  # or omit, it's the default
+STORAGE_TYPE=disk  # or omit, it's the default
 ```
 
 ### Git Storage (Optional)
@@ -44,7 +44,7 @@ COOKLANG_STORAGE_TYPE=disk  # or omit, it's the default
 
 **Configuration**:
 ```bash
-COOKLANG_STORAGE_TYPE=git
+STORAGE_TYPE=git
 ```
 
 ## File Structure
@@ -87,7 +87,7 @@ pub trait RecipeStorage: Send + Sync {
 
 ### Initialization
 
-The storage backend is selected at startup based on `COOKLANG_STORAGE_TYPE` environment variable:
+The storage backend is selected at startup based on `STORAGE_TYPE` environment variable or `--storage` CLI argument:
 
 ```rust
 let storage = match storage_type {
@@ -105,7 +105,7 @@ To add version history to an existing disk-based deployment:
 
 1. Initialize a git repository in the recipes directory
 2. Commit all existing files
-3. Switch `COOKLANG_STORAGE_TYPE=git`
+3. Switch `STORAGE_TYPE=git` or pass `--storage git` on startup
 4. Restart the server
 
 All subsequent operations will create git commits.
@@ -114,7 +114,7 @@ All subsequent operations will create git commits.
 
 To remove git overhead from a git-backed deployment:
 
-1. Switch `COOKLANG_STORAGE_TYPE=disk`
+1. Switch `STORAGE_TYPE=disk` or pass `--storage disk` on startup
 2. Restart the server
 3. Optionally, clean up `.git` directory (though it won't be used)
 
@@ -167,26 +167,30 @@ For critical deployments, use Git mode or implement external backups.
 
 ```yaml
 environment:
-  - COOKLANG_STORAGE_TYPE=disk  # optional, disk is default
+  - STORAGE_TYPE=disk  # optional, disk is default
 ```
 
 ### Docker Compose - Git
 
 ```yaml
 environment:
-  - COOKLANG_STORAGE_TYPE=git
+  - STORAGE_TYPE=git
 ```
 
 ### Local Development
 
 ```bash
-# Disk mode
-export COOKLANG_STORAGE_TYPE=disk
-cargo run
+# Disk mode (with environment variable)
+export STORAGE_TYPE=disk
+cargo run -- --data-dir ./recipes
 
-# Git mode
-export COOKLANG_STORAGE_TYPE=git
-cargo run
+# Git mode (with environment variable)
+export STORAGE_TYPE=git
+cargo run -- --data-dir ./recipes
+
+# Or with CLI arguments directly (overrides env vars)
+cargo run -- --data-dir ./recipes --storage disk
+cargo run -- --data-dir ./recipes --storage git
 ```
 
 ## Category Structure

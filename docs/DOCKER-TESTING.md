@@ -79,10 +79,13 @@ The script uses a process ID (`$$`) in directory names to ensure isolation when 
 
 ## Environment Variables
 
-The test configures the following environment variables in the container:
+The test configures the following environment variables in the container (uses defaults):
 
-- `RUST_LOG=info` - Logging level
-- `RECIPES_PATH=/data/recipes` - Recipe storage path
+- `RUST_LOG=info` - Logging level (default)
+- `DATA_DIR=/recipes` - Recipe storage path (default)
+- `STORAGE_TYPE=disk` - Storage backend (default)
+
+See [Dockerfile](../Dockerfile) for default configuration.
 
 ## Troubleshooting
 

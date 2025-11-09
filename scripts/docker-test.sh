@@ -133,9 +133,7 @@ EOF
     docker run -d \
         --name "$CONTAINER_NAME" \
         -p 3000:3000 \
-        -v "$TEST_REPO_DIR:/data/recipes" \
-        -e RUST_LOG=info \
-        -e RECIPES_PATH=/data/recipes \
+        -v "$TEST_REPO_DIR:/recipes" \
         cooklang-store-test
     
     echo -e "${GREEN}Container started${NC}"

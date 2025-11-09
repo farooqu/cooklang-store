@@ -45,8 +45,8 @@ COPY --from=builder --chown=cooklang:cooklang /app/target/x86_64-unknown-linux-m
 
 # Set environment variables
 ENV RUST_LOG=info
-ENV RECIPES_PATH=/recipes
-ENV COOKLANG_STORAGE_TYPE=disk
+ENV DATA_DIR=/recipes
+ENV STORAGE_TYPE=disk
 
 EXPOSE 3000
 
@@ -57,4 +57,4 @@ USER cooklang
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["cooklang-store"]
+CMD cooklang-store --data-dir ${DATA_DIR} --storage ${STORAGE_TYPE}

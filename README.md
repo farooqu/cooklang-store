@@ -115,10 +115,15 @@ This script:
 
 Create a `.env` file (see `.env.example` for all options):
 ```
-RECIPES_PATH=data/recipes
-COOKLANG_STORAGE_TYPE=disk  # 'disk' or 'git'
+DATA_DIR=data/recipes
+STORAGE_TYPE=disk  # 'disk' or 'git'
 JWT_SECRET=your-secret-key-here
 RUST_LOG=info
+```
+
+Or pass configuration via command-line arguments:
+```bash
+cooklang-store --data-dir /path/to/recipes --storage disk
 ```
 
 **Storage Options:**
