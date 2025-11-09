@@ -117,7 +117,6 @@ This script:
 
 Create a `.env` file:
 ```
-DATABASE_URL=sqlite://data/db/cooklang.db
 RECIPES_PATH=data/recipes
 JWT_SECRET=your-secret-key-here
 RUST_LOG=info

@@ -83,7 +83,6 @@ The test configures the following environment variables in the container:
 
 - `RUST_LOG=info` - Logging level
 - `RECIPES_PATH=/data/recipes` - Recipe storage path
-- `DATABASE_URL=sqlite:///data/db/cooklang.db` - Database location (if used)
 
 ## Troubleshooting
 

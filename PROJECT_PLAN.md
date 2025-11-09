@@ -20,10 +20,10 @@
 - Rust offers performance, safety, and single binary deployment
 - Parser libraries available: `cooklang-rs` (Rust), `cooklang-kotlin` (Kotlin)
 
-✅ **Metadata Storage**: SQLite
-- Lightweight, file-based database perfect for self-hosting
-- Fast search indexing for recipes
-- No separate database server needed
+✅ **Metadata Storage**: In-Memory Cache (DashMap)
+- Fast concurrent access for search and browsing
+- No separate database server or migrations needed
+- Cache rebuilt from git on startup
 
 ✅ **API Style**: REST
 - Simple, well-understood, and widely supported

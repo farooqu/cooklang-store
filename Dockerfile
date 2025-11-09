@@ -34,11 +34,10 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/target/release/cooklang-backend /usr/local/bin/cooklang-backend
 
 # Create directories for data
-RUN mkdir -p /data/recipes /data/db
+RUN mkdir -p /data/recipes
 
 # Set environment variables
 ENV RUST_LOG=info
-ENV DATABASE_URL=sqlite:///data/db/cooklang.db
 ENV RECIPES_PATH=/data/recipes
 
 EXPOSE 3000

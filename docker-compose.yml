@@ -9,11 +9,8 @@ services:
     volumes:
       # Recipe git repository
       - ./data/recipes:/data/recipes
-      # SQLite database
-      - ./data/db:/data/db
     environment:
       - RUST_LOG=info
-      - DATABASE_URL=sqlite:///data/db/cooklang.db
       - RECIPES_PATH=/data/recipes
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
     restart: unless-stopped
