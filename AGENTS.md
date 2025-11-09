@@ -194,25 +194,25 @@ milestones/
      - Added fallback lookup endpoints
      - Updated API.md documentation
      ```
+   - **If task files exist** (e.g., `tasks/TASK-1-*.md`), delete all task checklist files from `tasks/` directory
    - Delete the phase checklist file from `phases/` directory
    - Stage all changes together and commit:
    ```bash
    git add milestones/{milestone}/milestone.md
-   git rm milestones/{milestone}/phases/{phase-number}-{description}.md
-   git commit -m "[{milestone-name}] Phase {N} complete - delete phase checklist"
+   git rm milestones/{milestone}/tasks/TASK-*.md milestones/{milestone}/phases/{phase-number}-{description}.md
+   git commit -m "[{milestone-name}] Phase {N} complete - delete phase and task checklists"
    ```
     - **Important**: Always use `git add -A` when committing to ensure deleted files are included, OR use individual `git rm` commands for explicit control
 
-2. When a task is **100% complete**:
-- Update `milestone.md` to mark task as ✅ COMPLETE (if task-level tracking is used)
-- Delete the task checklist file from `tasks/` directory
-- Stage all changes together and commit:
+2. When a task is **100% complete** (and phase is not yet done):
+- Update the task file status to ✅ COMPLETE
+- Only delete the task file when the entire phase is complete (see rule #1 above)
+- Commit the task file update:
 ```bash
-git add milestones/{milestone}/milestone.md
-git rm milestones/{milestone}/tasks/TASK-{name}.md
-git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
+git add milestones/{milestone}/tasks/TASK-{name}.md
+git commit -m "[{milestone-name}] Task {name} complete"
 ```
-    - **Important**: Always use `git add -A` when committing to ensure deleted files are included, OR use individual `git rm` commands for explicit control
+    - Do NOT delete task files individually - wait until the phase is complete, then delete all task files together
 
 3. Keep `milestone.md` in the repo as historical record (never delete - it shows what was accomplished in each phase)
 4. CRITICAL: Do NOT update milestone.md and delete the checklist files in separate commits - they must be together
