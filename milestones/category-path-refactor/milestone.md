@@ -118,7 +118,7 @@ See: `milestones/category-path-refactor/phases/06-testing-verification.md`
 
 ## Definition of Done
 
-- [ ] All API spec files updated (openapi.yaml, API.md, postman-collection.json, SAMPLE-RECIPES.md)
+- [ ] All API spec files updated (openapi.yaml, API.md, postman-collection.json)
 - [ ] All response/request structs refactored with camelCase + serde attributes
 - [ ] All handlers updated (create, update, list, get) and tested
 - [ ] Title extraction and filename generation working correctly

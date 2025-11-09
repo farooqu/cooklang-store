@@ -153,7 +153,7 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 - [docs/API.md](docs/API.md) - Full REST API documentation and examples
 - [docs/openapi.yaml](docs/openapi.yaml) - OpenAPI 3.0 specification (import into Swagger UI or other tools)
 - [docs/postman-collection.json](docs/postman-collection.json) - Postman collection for API testing
-- [docs/SAMPLE-RECIPES.md](docs/SAMPLE-RECIPES.md) - Sample recipes for testing API endpoints
+- [tests/fixtures/](tests/fixtures/) - Test fixtures (Cooklang recipes for testing)
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide (72 integration tests, Docker tests, CI/CD)
 - [docs/DOCKER-TESTING.md](docs/DOCKER-TESTING.md) - Docker testing guide (requires only Docker, no Rust)
 - [docs/CI-CD.md](docs/CI-CD.md) - GitHub Actions CI/CD pipeline documentation

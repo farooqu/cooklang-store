@@ -384,14 +384,21 @@ Error responses include:
 
 The API has CORS enabled with permissive policy to allow requests from any origin.
 
-## Examples
+## Testing & Examples
 
-### Create a Recipe
+### Using Test Fixtures
+
+The repository includes test fixtures in `tests/fixtures/` with complete Cooklang recipes for API testing:
+- `pasta.cook`, `chocolate-cake.cook`, `pad-thai.cook`, `chicken-biryani.cook`, and more
+- All fixtures have YAML front matter with `title` field
+- Ready to use in API requests via curl or Postman
+
+### Example: Create a Recipe
 ```bash
 curl -X POST http://localhost:3000/api/v1/recipes \
   -H "Content-Type: application/json" \
   -d '{
-    "content": "---\ntitle: Pasta Carbonara\n---\n\n# Instructions\n\n@eggs{4} @bacon{200%g} @pasta{400%g}",
+    "content": "---\ntitle: Pasta Carbonara\n---\n\n@eggs{4} @bacon{200%g} @pasta{400%g}",
     "path": "mains",
     "author": "Chef Alice"
   }'
@@ -404,11 +411,11 @@ Response (201 Created):
   "recipeName": "Pasta Carbonara",
   "path": "mains",
   "fileName": "pasta-carbonara.cook",
-  "content": "---\ntitle: Pasta Carbonara\n---\n\n# Instructions\n\n@eggs{4} @bacon{200%g} @pasta{400%g}"
+  "content": "---\ntitle: Pasta Carbonara\n---\n\n@eggs{4} @bacon{200%g} @pasta{400%g}"
 }
 ```
 
-### Search for Recipes
+### Example: Search for Recipes
 ```bash
 curl "http://localhost:3000/api/v1/recipes/search?q=chocolate&limit=10"
 ```
@@ -431,12 +438,12 @@ Response (200 OK):
 }
 ```
 
-### Get a Specific Recipe
+### Example: Get a Specific Recipe
 ```bash
 curl http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6
 ```
 
-### Update Recipe (Change Title)
+### Example: Update Recipe (Change Title)
 ```bash
 curl -X PUT http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6 \
   -H "Content-Type: application/json" \
@@ -447,23 +454,23 @@ curl -X PUT http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6 \
 
 Note: Recipe file on disk will be renamed from `chocolate-cake.cook` to `dark-chocolate-cake.cook`.
 
-### Find Recipe by Name (After Rename)
+### Example: Find Recipe by Name (After Rename)
 If the recipe ID has changed due to a rename:
 ```bash
 curl "http://localhost:3000/api/v1/recipes/find-by-name?q=Dark%20Chocolate"
 ```
 
-### Find Recipe by Path
+### Example: Find Recipe by Path
 ```bash
 curl "http://localhost:3000/api/v1/recipes/find-by-path?path=desserts"
 ```
 
-### List Categories
+### Example: List Categories
 ```bash
 curl http://localhost:3000/api/v1/categories
 ```
 
-### Get Recipes in a Category
+### Example: Get Recipes in a Category
 ```bash
 curl http://localhost:3000/api/v1/categories/mains
 ```

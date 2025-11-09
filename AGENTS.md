@@ -110,7 +110,7 @@ scripts/docker-test.sh         # Test Docker image
 - `docs/API.md` - Human-readable documentation with curl examples
 - `docs/openapi.yaml` - OpenAPI 3.0 spec (validate: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"`)
 - `docs/postman-collection.json` - Postman requests (validate: `python3 -m json.tool docs/postman-collection.json > /dev/null`)
-- `docs/SAMPLE-RECIPES.md` - If adding new testing scenarios
+- `tests/fixtures/` - Test fixture recipes for testing
 
 **Documentation Maintenance**:
 - **AGENTS.md**: Update when adding commands, coding patterns, or making architecture decisions
@@ -130,7 +130,7 @@ scripts/docker-test.sh         # Test Docker image
 | **docs/API.md** | REST API endpoint documentation with examples |
 | **docs/openapi.yaml** | Machine-readable OpenAPI 3.0 specification |
 | **docs/postman-collection.json** | Postman collection with test requests |
-| **docs/SAMPLE-RECIPES.md** | Sample recipes in Cooklang format with testing instructions |
+| **tests/fixtures/** | Test fixture recipes for API testing |
 | **docs/TESTING.md** | Test patterns, coverage targets, CI/CD info |
 | **docs/DOCKER-TESTING.md** | Docker test script guide and debugging |
 
