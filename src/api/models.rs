@@ -1,14 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 /// Request body for creating a recipe
+///
+/// - `content`: required, must include YAML front matter with `title` field
+/// - `path`: optional directory path (no `recipes/` prefix, defaults to root)
+/// - `author`: optional git commit author
+/// - `comment`: optional git commit message
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateRecipeRequest {
-    /// Recipe name
-    pub name: String,
-    /// Recipe content in Cooklang format
+    /// Recipe content in Cooklang format (must include YAML front matter with `title` field)
     pub content: String,
-    /// Optional category for the recipe
-    pub category: Option<String>,
+    /// Optional directory path (relative to data-dir, no `recipes/` prefix)
+    pub path: Option<String>,
     /// Optional author name for git commit
     pub author: Option<String>,
     /// Optional comment for git commit
@@ -16,15 +19,19 @@ pub struct CreateRecipeRequest {
 }
 
 /// Request body for updating a recipe
+///
+/// At least one of `content` or `path` must be provided
+///
+/// - `content`: optional new recipe content (must include YAML front matter with `title` if provided)
+/// - `path`: optional new directory path (no `recipes/` prefix)
+/// - `author`: optional git commit author
+/// - `comment`: optional git commit message
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateRecipeRequest {
-    /// Optional new recipe name
-    pub name: Option<String>,
-    /// Optional new recipe content
+    /// Optional new recipe content (must include YAML front matter with `title` if provided)
     pub content: Option<String>,
-    /// Optional new category (use null to remove category)
-    #[serde(default)]
-    pub category: Option<Option<String>>,
+    /// Optional new directory path (relative to data-dir, no `recipes/` prefix)
+    pub path: Option<String>,
     /// Optional author name for git commit
     pub author: Option<String>,
     /// Optional comment for git commit

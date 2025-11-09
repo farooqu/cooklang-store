@@ -7,28 +7,36 @@ use super::models::PaginationInfo;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeResponse {
     /// Unique recipe ID (derived from git_path)
+    #[serde(rename = "recipeId")]
     pub recipe_id: String,
-    /// Recipe name
-    pub name: String,
-    /// Optional description
-    pub description: Option<String>,
-    /// Optional category
-    pub category: Option<String>,
+    /// Recipe name (derived from Cooklang YAML front matter)
+    #[serde(rename = "recipeName")]
+    pub recipe_name: String,
+    /// Directory path (relative to data-dir, no `recipes/` prefix)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    /// File name on disk (derived from recipe title)
+    #[serde(rename = "fileName")]
+    pub file_name: String,
     /// Full recipe content in Cooklang format
     pub content: String,
+    /// Optional description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// Recipe summary (without full content, for listings)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeSummary {
     /// Unique recipe ID
+    #[serde(rename = "recipeId")]
     pub recipe_id: String,
-    /// Recipe name
-    pub name: String,
-    /// Optional description
-    pub description: Option<String>,
-    /// Optional category
-    pub category: Option<String>,
+    /// Recipe name (derived from Cooklang YAML front matter)
+    #[serde(rename = "recipeName")]
+    pub recipe_name: String,
+    /// Directory path (relative to data-dir, no `recipes/` prefix)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
 }
 
 /// Paginated list of recipes
@@ -44,10 +52,10 @@ pub struct CategoryListResponse {
     pub categories: Vec<String>,
 }
 
-/// Category recipes response
+/// Category recipes response (deprecated - for backwards compatibility during transition)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CategoryRecipesResponse {
-    pub category: String,
+    pub path: String,
     pub recipes: Vec<RecipeSummary>,
     pub count: usize,
 }
