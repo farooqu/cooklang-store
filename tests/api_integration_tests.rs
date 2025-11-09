@@ -51,7 +51,18 @@ async fn extract_response_body(response: axum::http::Response<axum::body::Body>)
 // ============================================================================
 
 fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
-    let recipes_dir = temp_dir.path().join("recipes").join(category);
+    let recipes_dir = if category.contains('/') {
+        // Handle nested categories: "meals/meat/traditional"
+        let mut path = temp_dir.path().join("recipes");
+        for part in category.split('/') {
+            path = path.join(part);
+        }
+        path
+    } else {
+        // Single-level category
+        temp_dir.path().join("recipes").join(category)
+    };
+    
     assert!(
         recipes_dir.exists(),
         "Category directory doesn't exist: {}",
@@ -146,7 +157,18 @@ fn count_git_commits(temp_dir: &TempDir) -> usize {
 }
 
 fn verify_recipe_file_deleted(temp_dir: &TempDir, recipe_name: &str, category: &str) {
-    let recipes_dir = temp_dir.path().join("recipes").join(category);
+    let recipes_dir = if category.contains('/') {
+        // Handle nested categories: "meals/meat/traditional"
+        let mut path = temp_dir.path().join("recipes");
+        for part in category.split('/') {
+            path = path.join(part);
+        }
+        path
+    } else {
+        // Single-level category
+        temp_dir.path().join("recipes").join(category)
+    };
+    
     if !recipes_dir.exists() {
         return; // Category directory removed entirely
     }
@@ -932,4 +954,307 @@ async fn test_status_updates_with_recipes() {
 
     assert_eq!(json["recipe_count"], 2);
     assert_eq!(json["categories"], 2);
+}
+
+// ============================================================================
+// HIERARCHICAL CATEGORY TESTS
+// ============================================================================
+
+#[tokio::test]
+async fn test_create_recipe_in_nested_category() {
+    let (build_router, temp_dir) = setup_api().await;
+    let app = build_router();
+
+    // Create recipe in nested category
+    let create_payload = serde_json::json!({
+        "name": "Chicken Biryani",
+        "content": "# Biryani\n\n@rice{2%cup}\n@chicken{1%kg}",
+        "category": "meals/meat/traditional"
+    });
+
+    let response = app
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(json["name"], "Chicken Biryani");
+    assert_eq!(json["category"], "meals/meat/traditional");
+
+    // Verify nested directory structure exists on disk
+    verify_recipe_file_exists(&temp_dir, "Chicken Biryani", "meals/meat/traditional");
+}
+
+#[tokio::test]
+async fn test_read_recipe_from_nested_category() {
+    let (build_router, _) = setup_api().await;
+    let app1 = build_router();
+
+    // Create recipe in nested category
+    let create_payload = serde_json::json!({
+        "name": "Thai Green Curry",
+        "content": "# Thai Curry\n\n@coconut{400%ml}\n@green-curry-paste{2%tbsp}",
+        "category": "meals/asian/thai"
+    });
+
+    let response = app1
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .await
+        .unwrap();
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+
+    // Read the recipe back
+    let app2 = build_router();
+    let response = app2
+        .oneshot(make_request(
+            "GET",
+            &format!("/api/v1/recipes/{}", recipe_id),
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(json["name"], "Thai Green Curry");
+    assert_eq!(json["category"], "meals/asian/thai");
+    assert!(json["content"].as_str().unwrap().contains("@coconut{400%ml}"));
+}
+
+#[tokio::test]
+async fn test_move_recipe_between_nested_categories() {
+    let (build_router, temp_dir) = setup_api().await;
+    let app1 = build_router();
+
+    // Create recipe in one nested category
+    let create_payload = serde_json::json!({
+        "name": "Chocolate Cake",
+        "content": "# Cake\n\n@chocolate{200%g}",
+        "category": "desserts/cakes/chocolate"
+    });
+
+    let response = app1
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .await
+        .unwrap();
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+
+    // Verify it exists in original nested category
+    verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts/cakes/chocolate");
+
+    // Move to different nested category
+    let app2 = build_router();
+    let update_payload = serde_json::json!({
+        "category": "desserts/cakes/dark-chocolate"
+    });
+
+    let response = app2
+        .oneshot(make_request(
+            "PUT",
+            &format!("/api/v1/recipes/{}", recipe_id),
+            Some(update_payload),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["category"], "desserts/cakes/dark-chocolate");
+
+    // Verify file moved to new nested category
+    verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts/cakes/dark-chocolate");
+
+    // Verify file no longer exists in original category
+    verify_recipe_file_deleted(&temp_dir, "Chocolate Cake", "desserts/cakes/chocolate");
+}
+
+#[tokio::test]
+async fn test_get_recipes_from_nested_category() {
+    let (build_router, _temp_dir) = setup_api().await;
+    let app1 = build_router();
+
+    // Create multiple recipes in nested category
+    let payload1 = serde_json::json!({
+        "name": "Pad Thai",
+        "content": "# Pad Thai\n\n@noodles{200%g}",
+        "category": "meals/asian/thai"
+    });
+
+    let payload2 = serde_json::json!({
+        "name": "Green Curry",
+        "content": "# Curry\n\n@curry-paste{2%tbsp}",
+        "category": "meals/asian/thai"
+    });
+
+    app1.clone()
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload1)))
+        .await
+        .unwrap();
+
+    app1.clone()
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload2)))
+        .await
+        .unwrap();
+
+    // Create recipe in different category to ensure filtering works
+    let payload3 = serde_json::json!({
+        "name": "Spaghetti",
+        "content": "# Spaghetti\n\n@pasta{400%g}",
+        "category": "meals/european/italian"
+    });
+
+    app1.clone()
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload3)))
+        .await
+        .unwrap();
+
+    // Get recipes from nested Thai category (URL-encoded)
+    let app2 = build_router();
+    let response = app2
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/categories/meals%2Fasian%2Fthai",
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(json["category"], "meals/asian/thai");
+    assert_eq!(json["count"], 2);
+
+    let recipes = json["recipes"].as_array().unwrap();
+    assert_eq!(recipes.len(), 2);
+
+    let names: Vec<String> = recipes
+        .iter()
+        .map(|r| r["name"].as_str().unwrap().to_string())
+        .collect();
+    assert!(names.contains(&"Pad Thai".to_string()));
+    assert!(names.contains(&"Green Curry".to_string()));
+}
+
+#[tokio::test]
+async fn test_move_recipe_between_flat_and_nested_category() {
+    let (build_router, temp_dir) = setup_api().await;
+    let app1 = build_router();
+
+    // Create recipe in flat category
+    let create_payload = serde_json::json!({
+        "name": "Vanilla Cake",
+        "content": "# Vanilla\n\n@flour{2%cup}",
+        "category": "desserts"
+    });
+
+    let response = app1
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .await
+        .unwrap();
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+
+    // Verify in flat category
+    verify_recipe_file_exists(&temp_dir, "Vanilla Cake", "desserts");
+
+    // Move to nested category
+    let app2 = build_router();
+    let update_payload = serde_json::json!({
+        "category": "desserts/cakes/vanilla"
+    });
+
+    let response = app2
+        .oneshot(make_request(
+            "PUT",
+            &format!("/api/v1/recipes/{}", recipe_id),
+            Some(update_payload),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["category"], "desserts/cakes/vanilla");
+
+    // Verify moved to nested category
+    verify_recipe_file_exists(&temp_dir, "Vanilla Cake", "desserts/cakes/vanilla");
+    verify_recipe_file_deleted(&temp_dir, "Vanilla Cake", "desserts");
+}
+
+#[tokio::test]
+async fn test_list_categories_includes_nested() {
+    let (build_router, _) = setup_api().await;
+    let app1 = build_router();
+
+    // Create recipes in various nested categories
+    let payloads = vec![
+        serde_json::json!({
+            "name": "Tiramisu",
+            "content": "# Tiramisu\n\n@mascarpone{500%g}",
+            "category": "desserts/cakes/italian"
+        }),
+        serde_json::json!({
+            "name": "Cheesecake",
+            "content": "# Cheesecake\n\n@cream-cheese{500%g}",
+            "category": "desserts/cakes/american"
+        }),
+        serde_json::json!({
+            "name": "Flan",
+            "content": "# Flan\n\n@caramel{100%ml}",
+            "category": "desserts/custards"
+        }),
+    ];
+
+    for payload in payloads {
+        app1.clone()
+            .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+            .await
+            .unwrap();
+    }
+
+    // List all categories
+    let app2 = build_router();
+    let response = app2
+        .oneshot(make_request("GET", "/api/v1/categories", None))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    let categories: Vec<String> = json["categories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap().to_string())
+        .collect();
+
+    // Should have nested categories, not flattened
+    assert!(categories.contains(&"desserts/cakes/italian".to_string()));
+    assert!(categories.contains(&"desserts/cakes/american".to_string()));
+    assert!(categories.contains(&"desserts/custards".to_string()));
 }
