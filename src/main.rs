@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::path::Path;
+use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use cooklang_backend::{api, repository::RecipeRepository};
@@ -29,7 +29,8 @@ async fn main() {
 
     // Initialize repository from .cooklang directory
     let repo_path = Path::new(".cooklang");
-    let storage_type = std::env::var("COOKLANG_STORAGE_TYPE").unwrap_or_else(|_| "disk".to_string());
+    let storage_type =
+        std::env::var("COOKLANG_STORAGE_TYPE").unwrap_or_else(|_| "disk".to_string());
 
     let repo = match RecipeRepository::with_storage(repo_path, &storage_type).await {
         Ok(repo) => {

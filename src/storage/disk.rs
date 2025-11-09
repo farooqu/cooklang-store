@@ -29,15 +29,13 @@ impl RecipeStorage for DiskStorage {
             std::fs::create_dir_all(parent).context("Failed to create recipe directory")?;
         }
 
-        std::fs::write(&full_path, content)
-            .context(format!("Failed to write file: {}", rel_path))
+        std::fs::write(&full_path, content).context(format!("Failed to write file: {}", rel_path))
     }
 
     fn read_file(&self, rel_path: &str) -> Result<String> {
         let full_path = self.repo_path.join(rel_path);
 
-        std::fs::read_to_string(&full_path)
-            .context(format!("Failed to read file: {}", rel_path))
+        std::fs::read_to_string(&full_path).context(format!("Failed to read file: {}", rel_path))
     }
 
     fn delete_file(&self, rel_path: &str) -> Result<()> {

@@ -79,10 +79,7 @@ impl ErrorResponse {
         }
     }
 
-    pub fn with_details(
-        mut self,
-        details: HashMap<String, String>,
-    ) -> Self {
+    pub fn with_details(mut self, details: HashMap<String, String>) -> Self {
         self.details = Some(details);
         self
     }

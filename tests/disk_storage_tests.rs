@@ -1,8 +1,8 @@
 mod common;
 
+use common::*;
 use serde_json::Value;
 use tower::ServiceExt;
-use common::*;
 
 // ============================================================================
 // DISK STORAGE INTEGRATION TESTS
@@ -64,7 +64,11 @@ async fn test_create_recipe() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload.clone())))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(payload.clone()),
+        ))
         .await
         .unwrap();
 
@@ -143,7 +147,11 @@ async fn test_create_recipe_empty_category() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload.clone())))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(payload.clone()),
+        ))
         .await
         .unwrap();
 
@@ -423,7 +431,11 @@ async fn test_search_case_insensitive() {
     // Search with different cases
     let app2 = build_router();
     let response = app2
-        .oneshot(make_request("GET", "/api/v1/recipes/search?q=CHOCOLATE", None))
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/search?q=CHOCOLATE",
+            None,
+        ))
         .await
         .unwrap();
 
@@ -579,7 +591,11 @@ async fn test_update_recipe() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -784,7 +800,11 @@ async fn test_move_between_different_category_structures() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 

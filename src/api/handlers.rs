@@ -5,10 +5,7 @@ use axum::{
 };
 use std::sync::Arc;
 
-use crate::{
-    cache::generate_recipe_id,
-    repository::RecipeRepository,
-};
+use crate::{cache::generate_recipe_id, repository::RecipeRepository};
 
 use super::{
     models::{CreateRecipeRequest, ListQuery, PaginationInfo, SearchQuery, UpdateRecipeRequest},
@@ -21,9 +18,7 @@ pub async fn health_check() -> &'static str {
 }
 
 /// Status endpoint - returns server status and recipe count
-pub async fn status(
-    State(repo): State<Arc<RecipeRepository>>,
-) -> Json<StatusResponse> {
+pub async fn status(State(repo): State<Arc<RecipeRepository>>) -> Json<StatusResponse> {
     let recipes = repo.list_all();
     let categories = repo.get_categories();
 
@@ -44,14 +39,20 @@ pub async fn create_recipe(
     if payload.name.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new("validation_error", "Recipe name cannot be empty")),
+            Json(ErrorResponse::new(
+                "validation_error",
+                "Recipe name cannot be empty",
+            )),
         ));
     }
 
     if payload.content.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new("validation_error", "Recipe content cannot be empty")),
+            Json(ErrorResponse::new(
+                "validation_error",
+                "Recipe content cannot be empty",
+            )),
         ));
     }
 
@@ -186,14 +187,12 @@ pub async fn get_recipe(
     Path(recipe_id): Path<String>,
 ) -> Result<Json<RecipeResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Look up git_path from recipe_id using the cache
-    let git_path = repo
-        .get_recipe_git_path(&recipe_id)
-        .ok_or_else(|| {
-            (
-                StatusCode::NOT_FOUND,
-                Json(ErrorResponse::new("not_found", "Recipe not found")),
-            )
-        })?;
+    let git_path = repo.get_recipe_git_path(&recipe_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("not_found", "Recipe not found")),
+        )
+    })?;
 
     match repo.read(&git_path).await {
         Ok(recipe) => Ok(Json(RecipeResponse {
@@ -220,14 +219,12 @@ pub async fn update_recipe(
     Json(payload): Json<UpdateRecipeRequest>,
 ) -> Result<Json<RecipeResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Look up git_path from recipe_id
-    let git_path = repo
-        .get_recipe_git_path(&recipe_id)
-        .ok_or_else(|| {
-            (
-                StatusCode::NOT_FOUND,
-                Json(ErrorResponse::new("not_found", "Recipe not found")),
-            )
-        })?;
+    let git_path = repo.get_recipe_git_path(&recipe_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("not_found", "Recipe not found")),
+        )
+    })?;
 
     // Convert empty category string to None
     let category = payload.category.as_ref().map(|cat_opt| {
@@ -277,14 +274,12 @@ pub async fn delete_recipe(
     Path(recipe_id): Path<String>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
     // Look up git_path from recipe_id
-    let git_path = repo
-        .get_recipe_git_path(&recipe_id)
-        .ok_or_else(|| {
-            (
-                StatusCode::NOT_FOUND,
-                Json(ErrorResponse::new("not_found", "Recipe not found")),
-            )
-        })?;
+    let git_path = repo.get_recipe_git_path(&recipe_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new("not_found", "Recipe not found")),
+        )
+    })?;
 
     match repo.delete(&git_path).await {
         Ok(_) => Ok(StatusCode::NO_CONTENT),

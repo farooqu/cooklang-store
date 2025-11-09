@@ -15,8 +15,7 @@ use crate::repository::RecipeRepository;
 /// Build the API router with all routes
 pub fn build_router(repo: Arc<RecipeRepository>) -> Router {
     // Split routes: those that don't need state and those that do
-    let public_routes = Router::new()
-        .route("/health", get(handlers::health_check));
+    let public_routes = Router::new().route("/health", get(handlers::health_check));
 
     let api_routes = Router::new()
         .route("/status", get(handlers::status))

@@ -1,15 +1,13 @@
 use cooklang_backend::{api, repository::RecipeRepository};
-use std::sync::Arc;
 use std::fs;
+use std::sync::Arc;
 use tempfile::TempDir;
 
 // ============================================================================
 // TEST SETUP & REQUEST BUILDING
 // ============================================================================
 
-pub async fn setup_api_with_storage(
-    storage_type: &str,
-) -> (impl Fn() -> axum::Router, TempDir) {
+pub async fn setup_api_with_storage(storage_type: &str) -> (impl Fn() -> axum::Router, TempDir) {
     let temp_dir = TempDir::new().unwrap();
     let repo = RecipeRepository::with_storage(temp_dir.path(), storage_type)
         .await
@@ -35,9 +33,7 @@ pub fn make_request(
             .body(axum::body::Body::from(json_body.to_string()))
             .unwrap()
     } else {
-        builder
-            .body(axum::body::Body::empty())
-            .unwrap()
+        builder.body(axum::body::Body::empty()).unwrap()
     };
 
     request
@@ -94,7 +90,11 @@ pub fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category
 
 pub fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
     let filename = verify_recipe_file_exists(temp_dir, recipe_name, category);
-    let path = temp_dir.path().join("recipes").join(category).join(&filename);
+    let path = temp_dir
+        .path()
+        .join("recipes")
+        .join(category)
+        .join(&filename);
     fs::read_to_string(&path).expect("Failed to read recipe file")
 }
 

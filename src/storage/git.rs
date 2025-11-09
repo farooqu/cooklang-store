@@ -24,7 +24,10 @@ impl GitStorage {
 
 impl RecipeStorage for GitStorage {
     fn write_file(&self, rel_path: &str, content: &str) -> Result<()> {
-        let repo = self.repo.lock().map_err(|_| anyhow!("Failed to lock git repository"))?;
+        let repo = self
+            .repo
+            .lock()
+            .map_err(|_| anyhow!("Failed to lock git repository"))?;
 
         let workdir = repo
             .workdir()
@@ -47,12 +50,18 @@ impl RecipeStorage for GitStorage {
     }
 
     fn read_file(&self, rel_path: &str) -> Result<String> {
-        let repo = self.repo.lock().map_err(|_| anyhow!("Failed to lock git repository"))?;
+        let repo = self
+            .repo
+            .lock()
+            .map_err(|_| anyhow!("Failed to lock git repository"))?;
         git::read_file(&repo, rel_path)
     }
 
     fn delete_file(&self, rel_path: &str) -> Result<()> {
-        let repo = self.repo.lock().map_err(|_| anyhow!("Failed to lock git repository"))?;
+        let repo = self
+            .repo
+            .lock()
+            .map_err(|_| anyhow!("Failed to lock git repository"))?;
 
         let commit_message = format!("Delete recipe: {}", rel_path);
         git::delete_file(&repo, rel_path, &commit_message)?;
@@ -61,7 +70,10 @@ impl RecipeStorage for GitStorage {
     }
 
     fn discover_files(&self) -> Result<Vec<String>> {
-        let repo = self.repo.lock().map_err(|_| anyhow!("Failed to lock git repository"))?;
+        let repo = self
+            .repo
+            .lock()
+            .map_err(|_| anyhow!("Failed to lock git repository"))?;
         git::discover_cook_files(&repo)
     }
 }

@@ -1,7 +1,7 @@
 use cooklang_backend::{api, repository::RecipeRepository};
 use serde_json::Value;
-use std::sync::Arc;
 use std::fs;
+use std::sync::Arc;
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
@@ -31,9 +31,7 @@ fn make_request(
             .body(axum::body::Body::from(json_body.to_string()))
             .unwrap()
     } else {
-        builder
-            .body(axum::body::Body::empty())
-            .unwrap()
+        builder.body(axum::body::Body::empty()).unwrap()
     };
 
     request
@@ -62,7 +60,7 @@ fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category: &s
         // Single-level category
         temp_dir.path().join("recipes").join(category)
     };
-    
+
     assert!(
         recipes_dir.exists(),
         "Category directory doesn't exist: {}",
@@ -101,7 +99,11 @@ fn verify_recipe_file_exists(temp_dir: &TempDir, recipe_name: &str, category: &s
 
 fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -> String {
     let filename = verify_recipe_file_exists(temp_dir, recipe_name, category);
-    let path = temp_dir.path().join("recipes").join(category).join(&filename);
+    let path = temp_dir
+        .path()
+        .join("recipes")
+        .join(category)
+        .join(&filename);
     fs::read_to_string(&path).expect("Failed to read recipe file")
 }
 
@@ -168,7 +170,7 @@ fn verify_recipe_file_deleted(temp_dir: &TempDir, recipe_name: &str, category: &
         // Single-level category
         temp_dir.path().join("recipes").join(category)
     };
-    
+
     if !recipes_dir.exists() {
         return; // Category directory removed entirely
     }
@@ -253,7 +255,11 @@ async fn test_create_recipe() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload.clone())))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(payload.clone()),
+        ))
         .await
         .unwrap();
 
@@ -332,7 +338,11 @@ async fn test_create_recipe_empty_category() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload.clone())))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(payload.clone()),
+        ))
         .await
         .unwrap();
 
@@ -612,7 +622,11 @@ async fn test_search_case_insensitive() {
     // Search with different cases
     let app2 = build_router();
     let response = app2
-        .oneshot(make_request("GET", "/api/v1/recipes/search?q=CHOCOLATE", None))
+        .oneshot(make_request(
+            "GET",
+            "/api/v1/recipes/search?q=CHOCOLATE",
+            None,
+        ))
         .await
         .unwrap();
 
@@ -768,7 +782,11 @@ async fn test_update_recipe() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -973,7 +991,11 @@ async fn test_create_recipe_in_nested_category() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -1002,7 +1024,11 @@ async fn test_read_recipe_from_nested_category() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -1028,7 +1054,10 @@ async fn test_read_recipe_from_nested_category() {
 
     assert_eq!(json["name"], "Thai Green Curry");
     assert_eq!(json["category"], "meals/asian/thai");
-    assert!(json["content"].as_str().unwrap().contains("@coconut{400%ml}"));
+    assert!(json["content"]
+        .as_str()
+        .unwrap()
+        .contains("@coconut{400%ml}"));
 }
 
 #[tokio::test]
@@ -1044,7 +1073,11 @@ async fn test_move_recipe_between_nested_categories() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -1166,7 +1199,11 @@ async fn test_move_recipe_between_flat_and_nested_category() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
@@ -1272,7 +1309,11 @@ async fn test_move_between_different_category_structures() {
     });
 
     let response = app1
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .oneshot(make_request(
+            "POST",
+            "/api/v1/recipes",
+            Some(create_payload),
+        ))
         .await
         .unwrap();
 
