@@ -9,13 +9,11 @@
 
 ## Task 3.1: Update Response Structs (responses.rs)
 
-See: `milestones/category-path-refactor/tasks/TASK-update-response-structs.md`
-
-(Details in task file)
+See: `milestones/category-path-refactor/tasks/TASK-01-update-response-structs.md`
 
 ## Task 3.2: Update Request Structs (models.rs)
 
-See: `milestones/category-path-refactor/tasks/TASK-update-request-structs.md`
+See: `milestones/category-path-refactor/tasks/TASK-02-update-request-structs.md`
 
 ---
 

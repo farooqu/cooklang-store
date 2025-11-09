@@ -157,7 +157,10 @@ milestones/
 
 **Phase/Task Naming**:
 - Phases: `{phase-number}-{description}.md` (e.g., `01-api-spec.md`)
-- Tasks: `TASK-{name}.md` (e.g., `TASK-extract-metadata.md`)
+- Tasks: `TASK-{task-number}-{description}.md` (e.g., `TASK-01-extract-metadata.md`)
+  - Task numbers are sequential within a phase (01, 02, 03, etc.)
+  - Indicates order that tasks should be completed
+  - Helps agents understand task dependencies
 
 **Checklist Format** (at top of phase/task file):
 ```markdown
