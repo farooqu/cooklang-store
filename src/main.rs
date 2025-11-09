@@ -1,7 +1,7 @@
+use clap::Parser;
 use std::path::Path;
 use std::sync::Arc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use clap::Parser;
 
 use cooklang_backend::{api, repository::RecipeRepository};
 
