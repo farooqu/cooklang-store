@@ -26,6 +26,16 @@ Run all tests:
 cargo test
 ```
 
+Run disk storage tests only:
+```bash
+cargo test --test disk_storage_tests
+```
+
+Run git storage tests only:
+```bash
+cargo test --test git_storage_tests
+```
+
 Run specific test:
 ```bash
 cargo test test_create_recipe
@@ -38,16 +48,23 @@ cargo test -- --nocapture
 
 Run a specific test module:
 ```bash
-cargo test api_integration
+cargo test --test disk_storage_tests
 ```
 
 ## Test Coverage
 
-### Integration Tests (24 test cases with Git Verification)
+### Integration Tests (72 total test cases)
 
-Located in `tests/api_integration_tests.rs`
+Tests are organized into dedicated modules for each storage backend, ensuring comprehensive coverage:
 
-**Key Feature**: Tests verify both API responses AND git repository state (files created/updated/deleted at correct paths with correct contents)
+- **`tests/disk_storage_tests.rs`** (24 tests) - Tests API with DiskStorage backend
+- **`tests/git_storage_tests.rs`** (24 tests) - Tests API with GitStorage backend + git verification
+- **`tests/api_integration_tests.rs`** (24 tests) - Legacy integration tests using default storage (disk)
+- **`tests/common.rs`** (shared helpers) - Common test utilities and git verification helpers
+
+**Key Feature**: Git storage tests verify both API responses AND git repository state (files created/updated/deleted at correct paths with correct contents)
+
+**Note**: The legacy `api_integration_tests.rs` is kept for backward compatibility. New tests should use `disk_storage_tests.rs` or `git_storage_tests.rs` depending on the backend being tested.
 
 #### Health & Status (2 tests)
 - `test_health_check` - Verify `/health` endpoint responds with 200
@@ -57,7 +74,9 @@ Located in `tests/api_integration_tests.rs`
 - `test_create_recipe` - Create a recipe and verify response
 - `test_create_recipe_with_comment` - Create recipe with optional comment field for git commit message
 - `test_create_recipe_empty_name` - Validation: empty name returns 400
-- `test_create_recipe_empty_category` - Validation: empty category returns 400
+- `test_create_recipe_empty_category` - Validation: behavior differs by backend
+  - DiskStorage: accepts (treats as uncategorized)
+  - GitStorage: rejects with 400 (requires category for proper git path structure)
 - `test_create_recipe_empty_content` - Validation: empty content returns 400
 
 #### Recipe Retrieval (4 tests)
