@@ -137,7 +137,7 @@ async fn test_create_recipe_empty_name() {
 
 #[tokio::test]
 async fn test_create_recipe_empty_category() {
-    let (build_router, _temp_dir) = setup_api_with_storage("git").await;
+    let (build_router, temp_dir) = setup_api_with_storage("git").await;
     let app = build_router();
 
     let payload = serde_json::json!({
@@ -147,13 +147,30 @@ async fn test_create_recipe_empty_category() {
     });
 
     let response = app
-        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload.clone())))
         .await
         .unwrap();
 
-    // Git storage requires a category (cannot store at root level)
-    // Empty category is rejected with 400
-    assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
+    // Empty category string is treated as no category (None), so should succeed
+    // Git storage supports storing recipes at root level (recipes/{slug}.cook)
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["name"], "Test Recipe");
+    assert!(json["recipe_id"].is_string());
+
+    // Verify file was created at root of recipes directory (not in a category subdirectory)
+    let filename = verify_recipe_file_exists_at_root(&temp_dir, "Test Recipe");
+    assert!(filename.ends_with(".cook"));
+
+    // Verify file contents
+    let contents = read_recipe_file_at_root(&temp_dir, "Test Recipe");
+    assert_eq!(contents, payload["content"].as_str().unwrap());
+
+    // Verify git commit was made
+    let commit_count = count_git_commits(&temp_dir);
+    assert!(commit_count > 0, "Expected at least one commit in git repo");
 }
 
 #[tokio::test]

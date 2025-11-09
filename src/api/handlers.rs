@@ -55,12 +55,21 @@ pub async fn create_recipe(
         ));
     }
 
+    // Convert empty category string to None
+    let category = payload.category.as_deref().and_then(|cat| {
+        if cat.trim().is_empty() {
+            None
+        } else {
+            Some(cat)
+        }
+    });
+
     // Create recipe
     match repo
         .create_with_author_and_comment(
             &payload.name,
             &payload.content,
-            payload.category.as_deref(),
+            category,
             payload.author.as_deref(),
             payload.comment.as_deref(),
         )
@@ -220,12 +229,23 @@ pub async fn update_recipe(
             )
         })?;
 
+    // Convert empty category string to None
+    let category = payload.category.as_ref().map(|cat_opt| {
+        cat_opt.as_ref().and_then(|cat| {
+            if cat.trim().is_empty() {
+                None
+            } else {
+                Some(cat.as_str())
+            }
+        })
+    });
+
     match repo
         .update_with_author_and_comment(
             &git_path,
             payload.name.as_deref(),
             payload.content.as_deref(),
-            payload.category.as_ref().map(|c| c.as_deref()),
+            category,
             payload.author.as_deref(),
             payload.comment.as_deref(),
         )

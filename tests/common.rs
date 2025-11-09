@@ -98,6 +98,50 @@ pub fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -
     fs::read_to_string(&path).expect("Failed to read recipe file")
 }
 
+pub fn verify_recipe_file_exists_at_root(temp_dir: &TempDir, recipe_name: &str) -> String {
+    let recipes_dir = temp_dir.path().join("recipes");
+    assert!(
+        recipes_dir.exists(),
+        "Recipes directory doesn't exist: {}",
+        recipes_dir.display()
+    );
+
+    // Find the recipe file at root (could be recipe-name.cook or recipe-name-2.cook if duplicate)
+    let name_slug = recipe_name.to_lowercase().replace(" ", "-");
+    let files: Vec<_> = fs::read_dir(&recipes_dir)
+        .unwrap()
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+            // Only look for direct children (not in subdirectories)
+            if path.is_file() && path.extension().map(|e| e == "cook").unwrap_or(false) {
+                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
+                if filename.starts_with(&name_slug) {
+                    Some(filename)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    assert!(
+        !files.is_empty(),
+        "Recipe file not found for '{}' at root of recipes directory",
+        recipe_name
+    );
+
+    files[0].clone()
+}
+
+pub fn read_recipe_file_at_root(temp_dir: &TempDir, recipe_name: &str) -> String {
+    let filename = verify_recipe_file_exists_at_root(temp_dir, recipe_name);
+    let path = temp_dir.path().join("recipes").join(&filename);
+    fs::read_to_string(&path).expect("Failed to read recipe file at root")
+}
+
 pub fn count_git_commits(temp_dir: &TempDir) -> usize {
     let repo = git2::Repository::open(temp_dir.path()).expect("Failed to open git repo");
     let mut revwalk = repo.revwalk().unwrap();
