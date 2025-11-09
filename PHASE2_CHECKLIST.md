@@ -6,16 +6,22 @@
 
 ---
 
-## Task 2.1: Add Recipe Metadata Extraction Utility
+## Task 2.1: Add Recipe Metadata Extraction Utility ✅ COMPLETE
 
-- [ ] Create new function `extract_recipe_title(content: &str) -> Result<String, Error>`
-- [ ] Parse Cooklang content to extract title from YAML front matter
-- [ ] Front matter format: YAML block delimited by `---` at start of file
-- [ ] Extract `title` field from YAML front matter (case-insensitive key lookup)
-- [ ] Handle edge cases: empty content, missing title, invalid YAML, malformed front matter
-- [ ] Add unit tests for title extraction (valid cases, edge cases, missing title)
-- [ ] Document expected format (inline in function or docs/SAMPLE-RECIPES.md)
-- [ ] Reference Cooklang spec: https://cooklang.org/docs/spec/
+- [x] Create new function `extract_recipe_title(content: &str) -> Result<String, Error>`
+- [x] Parse Cooklang content to extract title from YAML front matter
+- [x] Front matter format: YAML block delimited by `---` at start of file
+- [x] Extract `title` field from YAML front matter (case-insensitive key lookup)
+- [x] Handle edge cases: empty content, missing title, invalid YAML, malformed front matter
+- [x] Add unit tests for title extraction (valid cases, edge cases, missing title)
+- [x] Document expected format (inline in function or docs/SAMPLE-RECIPES.md)
+- [x] Reference Cooklang spec: https://cooklang.org/docs/spec/
+
+**Implementation Details**:
+- Added `extract_recipe_title(content: &str) -> Result<String>` in `src/parser/mod.rs`
+- Helper function `extract_title_from_yaml()` for YAML parsing
+- 19 comprehensive unit tests covering standard format, quotes, case-insensitivity, edge cases, unicode, and error conditions
+- All 74 existing tests still pass; no regressions
 
 **Commit Message**: `[Phase2.1] Add recipe metadata extraction utility - extract_recipe_title()`
 
