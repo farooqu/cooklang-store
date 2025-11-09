@@ -113,12 +113,17 @@ This script:
 
 ### Configuration
 
-Create a `.env` file:
+Create a `.env` file (see `.env.example` for all options):
 ```
 RECIPES_PATH=data/recipes
+COOKLANG_STORAGE_TYPE=disk  # 'disk' or 'git'
 JWT_SECRET=your-secret-key-here
 RUST_LOG=info
 ```
+
+**Storage Options:**
+- `disk` (default): Direct filesystem storage - simple, no version history
+- `git`: Git repository backend - provides version history, branching, and collaboration
 
 ## API
 
