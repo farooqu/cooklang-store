@@ -77,6 +77,10 @@ Features not critical to the core purpose of CRUD operations on `.cook` files:
 - Health check endpoints
 - Request logging and monitoring
 
+### Future Ideas
+- Recipe images (store alongside `.cook` files)
+- Step-level images (attach images to specific recipe steps)
+
 ### Out of Scope
 The following are intentionally excluded as they go beyond the core purpose of persisting raw `.cook` files:
 - Rate limiting, performance benchmarking, load testing
