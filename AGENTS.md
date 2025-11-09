@@ -135,12 +135,12 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - Example: "✅ **Caching**: In-memory DashMap (not SQLite) - simpler deployment, no migrations needed, cache rebuilds from git on startup which is fast for typical family-scale collections"
 
 **Documented Architectural Decisions**:
-- ✅ **Caching**: In-memory DashMap (not SQLite) - simpler deployment, no migrations, cache rebuilds from git on startup
-- ✅ **Storage**: Git repository as source of truth + in-memory cache for queries
+- ✅ **Caching**: In-memory DashMap (not SQLite) - simpler deployment, no migrations, cache rebuilds from storage on startup
+- ✅ **Storage**: Pluggable backend architecture with DiskStorage (default) and GitStorage options - source of truth on filesystem + in-memory cache for queries
 - ✅ **API**: REST (simple, self-hosted friendly)
 - ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
 - ✅ **Recipe ID**: SHA256 hash of git_path (first 12 hex chars) - URL-friendly, deterministic, allows looking up recipes by ID in API while maintaining git_path internally
-- ✅ **Thread Safety**: git2::Repository wrapped in Mutex to allow Arc<RecipeRepository> in Axum state
+- ✅ **Thread Safety**: Git2::Repository wrapped in Mutex for DiskStorage in git mode; atomic operations per storage backend
 - ✅ **Rust Version**: 1.83+ (required for Cargo.lock v4 format used in dependencies)
 
 **API Module Structure** (`src/api/`):

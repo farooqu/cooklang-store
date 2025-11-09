@@ -53,12 +53,17 @@ Complete implementation:
 - Filter recipes by category
 - Category listing with filtering
 
+## Completed Deferred Features ✅
+
+### Storage Flexibility (Completed)
+- Support persisting recipes directly to disk without git
+- Git storage backend with automatic commits
+- Pluggable RecipeStorage trait allows easy addition of new backends
+- Default to disk (simpler), git available when needed via COOKLANG_STORAGE_TYPE env var
+
 ## Deferred Features
 
 Features not critical to the core purpose of CRUD operations on `.cook` files:
-
-### Storage Flexibility
-- **Make git optional**: Support persisting recipes directly to disk without git, for simpler deployments that don't need version history
 
 ### Advanced Searching & Filtering
 - Full-text search on recipe steps
