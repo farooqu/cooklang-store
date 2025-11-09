@@ -22,8 +22,8 @@ pub fn parse_recipe(content: &str, name: &str) -> Result<ScalableRecipe, String>
 ///
 /// The function:
 /// - Looks for YAML front matter delimited by `---` at the start of content
-/// - Extracts the `title` field (case-insensitive key lookup)
-/// - Returns an error if title is missing, empty, or front matter is malformed
+/// - Parses the YAML block and extracts the `title` field
+/// - Returns an error if title is missing or empty
 ///
 /// # Arguments
 /// * `content` - The Cooklang recipe content
@@ -60,53 +60,39 @@ pub fn extract_recipe_title(content: &str) -> Result<String> {
         .find("---")
         .ok_or_else(|| anyhow!("Malformed YAML front matter: missing closing --- delimiter"))?;
 
-    let front_matter = &remaining[..closing_delimiter_pos].trim();
+    let front_matter_str = remaining[..closing_delimiter_pos].trim();
 
-    // Parse the front matter to extract the title field
-    let title = extract_title_from_yaml(front_matter)?;
+    // Parse YAML front matter using serde_yaml
+    let yaml_value: serde_yaml::Value = serde_yaml::from_str(front_matter_str)
+        .map_err(|e| anyhow!("Invalid YAML front matter: {}", e))?;
 
-    Ok(title)
-}
+    // Extract title field from parsed YAML (case-insensitive key lookup)
+    let title_value = yaml_value
+        .as_mapping()
+        .ok_or_else(|| anyhow!("YAML front matter must be a mapping"))?
+        .iter()
+        .find(|(key, _)| {
+            key.as_str()
+                .map(|k| k.to_lowercase() == "title")
+                .unwrap_or(false)
+        })
+        .map(|(_, v)| v)
+        .ok_or_else(|| {
+            anyhow!(
+                "Title field not found in YAML front matter. Expected format: title: Recipe Name"
+            )
+        })?;
 
-/// Parses YAML front matter and extracts the title field (case-insensitive).
-///
-/// YAML parsing is simple: looks for a line matching `title: <value>` (case-insensitive key).
-fn extract_title_from_yaml(yaml_content: &str) -> Result<String> {
-    for line in yaml_content.lines() {
-        let line = line.trim();
+    let title = title_value
+        .as_str()
+        .ok_or_else(|| anyhow!("Title field must be a string"))?
+        .trim();
 
-        // Skip empty lines and comments
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-
-        // Look for key: value pattern
-        if let Some(colon_pos) = line.find(':') {
-            let key = line[..colon_pos].trim().to_lowercase();
-            let value = line[colon_pos + 1..].trim();
-
-            if key == "title" {
-                if value.is_empty() {
-                    return Err(anyhow!("Title field is empty in YAML front matter"));
-                }
-
-                // Handle quoted values (remove surrounding quotes if present)
-                let title = if (value.starts_with('"') && value.ends_with('"'))
-                    || (value.starts_with('\'') && value.ends_with('\''))
-                {
-                    &value[1..value.len() - 1]
-                } else {
-                    value
-                };
-
-                return Ok(title.to_string());
-            }
-        }
+    if title.is_empty() {
+        return Err(anyhow!("Title field is empty in YAML front matter"));
     }
 
-    Err(anyhow!(
-        "Title field not found in YAML front matter. Expected format: title: Recipe Name"
-    ))
+    Ok(title.to_string())
 }
 
 #[cfg(test)]
@@ -318,10 +304,11 @@ Add @eggs{2} to the bowl."#;
         let content = "---\ntitle:\n---\n\nRecipe content";
         let result = extract_recipe_title(content);
         assert!(result.is_err());
+        // serde_yaml parses empty value as null, so we get "must be a string" error
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Title field is empty"));
+            .contains("Title field must be a string"));
     }
 
     #[test]
