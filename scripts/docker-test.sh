@@ -123,7 +123,7 @@ validate_recipe_in_nested_category() {
 
 validate_title_extraction() {
     # Verify the name in response matches YAML title, not request name
-    jq -e '.name | type == "string"' /tmp/response.json > /dev/null 2>&1
+    jq -e '.recipeName | type == "string"' /tmp/response.json > /dev/null 2>&1
 }
 
 main() {
