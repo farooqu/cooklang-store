@@ -91,10 +91,11 @@ The following are intentionally excluded as they go beyond the core purpose of p
 
 ## Technical Debt & Ongoing Tasks
 
-- [ ] **DESIGN MISMATCH - Category Structure**: Current implementation treats categories as flat (single-level) - only the first subdirectory under `recipes/` is extracted as the category. A path like `recipes/meals/meat/traditional/chicken-biryani.cook` has category="meals", ignoring "meat/traditional". Need to decide:
-- Should categories support hierarchical nesting (e.g., "meals > meat > traditional")?
-- Or should the API structure restrict to `recipes/{category}/{slug}.cook` only?
-- Update implementation and documentation once decided
+- [x] **DESIGN MISMATCH - Category Structure**: ✅ Resolved (Nov 9, 2025)
+  - Implemented hierarchical category support: `recipes/meals/meat/traditional/chicken-biryani.cook` now has category `meals/meat/traditional`
+  - Category field contains full path from `recipes/` to parent directory
+  - Updated extraction logic in `src/repository.rs`
+  - Updated tests and all documentation (STORAGE.md, API.md)
 - [ ] Maintain >80% test coverage
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning

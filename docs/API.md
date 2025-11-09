@@ -196,7 +196,11 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **URL**: `/api/v1/categories/{name}`
 - **Method**: `GET`
 - **Path Parameters**:
-  - `name` (required): Category name
+  - `name` (required): Category name (supports hierarchical paths with `/` separators)
+- **Description**: Categories can be hierarchical, reflecting the directory structure. Use URL encoding for `/` as `%2F`.
+- **Examples**:
+  - `/api/v1/categories/desserts` - Get all recipes in the `desserts` category
+  - `/api/v1/categories/meals%2Fmeat%2Ftraditional` - Get all recipes in `meals/meat/traditional`
 - **Response**:
   ```json
   {
@@ -215,6 +219,16 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Status Code**: `200 OK`
 - **Error Codes**:
   - `404 Not Found`: Category not found
+
+## Categories
+
+Categories reflect the directory structure on disk and support hierarchical nesting:
+
+- **Single-level**: `recipes/desserts/chocolate-cake.cook` → category: `desserts`
+- **Hierarchical**: `recipes/meals/meat/traditional/chicken-biryani.cook` → category: `meals/meat/traditional`
+- **Root-level**: `recipes/simple-recipe.cook` → no category (optional field is null)
+
+When creating or updating recipes, provide the category as a single string. If nesting is needed, use forward slashes (`/`) as directory separators.
 
 ## Recipe ID Format
 

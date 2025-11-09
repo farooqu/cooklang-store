@@ -53,17 +53,21 @@ Both modes organize recipes the same way:
 
 ```
 recipes/
-├── simple-recipe.cook           # Root level recipe
+├── simple-recipe.cook           # Root level recipe (no category)
 ├── desserts/
-│   ├── chocolate-cake.cook
+│   ├── chocolate-cake.cook      # category: "desserts"
 │   └── vanilla-cake.cook
-└── mains/
-    └── pasta.cook
+├── mains/
+│   └── pasta.cook               # category: "mains"
+└── meals/
+    └── meat/
+        └── traditional/
+            └── chicken-biryani.cook  # category: "meals/meat/traditional"
 ```
 
 The file paths are used to:
 - Generate recipe IDs (SHA256 hash of git_path)
-- Extract categories (first directory level after `recipes/`)
+- Extract hierarchical categories (all directory levels between `recipes/` and the filename)
 - Create URL-friendly slugs from recipe names
 
 ## Implementation Details
@@ -185,11 +189,21 @@ export COOKLANG_STORAGE_TYPE=git
 cargo run
 ```
 
+## Category Structure
+
+Categories support hierarchical nesting to reflect the directory structure on disk:
+
+- `recipes/desserts/cake.cook` → category: `desserts`
+- `recipes/meals/meat/traditional/chicken-biryani.cook` → category: `meals/meat/traditional`
+- `recipes/simple.cook` → no category (root level)
+
+The category field contains the full path from `recipes/` to the parent directory of the file, with directory separators preserved as forward slashes `/`.
+
 ## Compatibility
 
 - **No breaking changes** - API responses are identical regardless of storage mode
 - **Recipe IDs** are consistent across modes (based on file paths)
-- **Category extraction** works the same way
+- **Category extraction** works the same way and supports hierarchical paths
 - **All CRUD operations** work identically from the API perspective
 
 The storage backend is purely an implementation detail invisible to API consumers.

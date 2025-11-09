@@ -400,11 +400,19 @@ impl RecipeRepository {
     }
 
     /// Extract category from git path
+    /// Categories support hierarchical nesting: recipes/meals/meat/traditional/chicken-biryani.cook
+    /// would have category "meals/meat/traditional"
     fn extract_category_from_path(&self, git_path: &str) -> Option<String> {
-        // Expected: recipes/{category}/{...}/{slug}.cook
+        // Expected: recipes/{category/path}/{slug}.cook
         let parts: Vec<&str> = git_path.split('/').collect();
         if parts.len() >= 3 && parts[0] == "recipes" {
-            Some(parts[1].to_string())
+            // All parts between "recipes/" and the filename form the category path
+            let category_parts = &parts[1..parts.len() - 1];
+            if !category_parts.is_empty() {
+                Some(category_parts.join("/"))
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -853,14 +861,22 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let repo = RecipeRepository::new(temp_dir.path()).await?;
 
+        // Single-level category
         assert_eq!(
             repo.extract_category_from_path("recipes/desserts/cake.cook"),
             Some("desserts".to_string())
         );
+        // Hierarchical category (nested directories)
         assert_eq!(
             repo.extract_category_from_path("recipes/desserts/chocolate/cake.cook"),
-            Some("desserts".to_string())
+            Some("desserts/chocolate".to_string())
         );
+        // Deeper nesting
+        assert_eq!(
+            repo.extract_category_from_path("recipes/meals/meat/traditional/chicken-biryani.cook"),
+            Some("meals/meat/traditional".to_string())
+        );
+        // Root-level recipe (no category)
         assert_eq!(repo.extract_category_from_path("recipes/cake.cook"), None);
 
         Ok(())
