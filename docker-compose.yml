@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   cooklang-store:
-    build: .
+    image: farooqu/cooklang-store:latest
     container_name: cooklang-store
     ports:
       - "3000:3000"
