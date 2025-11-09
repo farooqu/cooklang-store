@@ -14,6 +14,9 @@ CONTAINER_NAME="cooklang-store-test-$$"
 TIMEOUT=30
 API_BASE="http://localhost:3000/api/v1"
 
+# Fixtures to seed for testing
+FIXTURES_TO_SEED=("chocolate-cake" "vanilla-cake" "test-recipe")
+
 # Cleanup function
 cleanup() {
     echo -e "${YELLOW}Cleaning up...${NC}"
@@ -47,13 +50,14 @@ wait_for_api() {
     return 1
 }
 
-# Function to run a test
+# Function to run a test with response validation
 run_test() {
     local test_name=$1
     local method=$2
     local endpoint=$3
     local data=$4
     local expected_status=$5
+    local validation_fn=${6:-}
     
     echo -e "${YELLOW}Testing: $test_name${NC}"
     
@@ -67,17 +71,44 @@ run_test() {
     
     local status=$(eval $cmd | tail -c 3)
     
-    if [ "$status" = "$expected_status" ]; then
-        echo -e "${GREEN}✓ $test_name (HTTP $status)${NC}"
-        cat /tmp/response.json | jq . 2>/dev/null || cat /tmp/response.json
-        echo ""
-        return 0
-    else
+    if [ "$status" != "$expected_status" ]; then
         echo -e "${RED}✗ $test_name (Expected $expected_status, got $status)${NC}"
         cat /tmp/response.json
         echo ""
         return 1
     fi
+    
+    # If validation function provided, run it
+    if [ -n "$validation_fn" ]; then
+        if ! $validation_fn; then
+            echo -e "${RED}✗ $test_name (Validation failed)${NC}"
+            return 1
+        fi
+    fi
+    
+    echo -e "${GREEN}✓ $test_name (HTTP $status)${NC}"
+    cat /tmp/response.json | jq . 2>/dev/null || cat /tmp/response.json
+    echo ""
+    return 0
+}
+
+# Validation functions
+validate_status() {
+    local expected_count=$1
+    jq -e ".recipe_count == $expected_count" /tmp/response.json > /dev/null 2>&1
+}
+
+validate_categories() {
+    jq -e '.categories | index("desserts") != null' /tmp/response.json > /dev/null 2>&1
+}
+
+validate_recipes_list() {
+    jq -e '.recipes | length > 0' /tmp/response.json > /dev/null 2>&1
+}
+
+validate_search_results() {
+    local search_term=$1
+    jq -e ".recipes | length > 0" /tmp/response.json > /dev/null 2>&1
 }
 
 main() {
@@ -88,34 +119,25 @@ main() {
     echo -e "${YELLOW}Creating test recipe repository at $TEST_REPO_DIR${NC}"
     mkdir -p "$TEST_REPO_DIR"
     
+    # Get script directory for relative path to fixtures
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    
     # Initialize git repo
     cd "$TEST_REPO_DIR"
     git init -q
     git config user.email "test@example.com"
     git config user.name "Test User"
     
-    # Create sample recipes directory and files
+    # Create recipes directory
     mkdir -p recipes/desserts
     
-    cat > recipes/desserts/chocolate-cake.cook << 'EOF'
-Chocolate Cake
-
-Ingredients:
-- @flour{2%cup}
-- @sugar{1%cup}
-- @butter{0.5%cup}
-- @eggs{2}
-- @cocoa_powder{0.75%cup}
-- @baking_powder{2%tsp}
-
-Steps:
-1. Preheat #oven{} to 350°F.
-2. Cream @butter{} and @sugar{} together.
-3. Beat in @eggs{} one at a time.
-4. Mix @flour{}, @cocoa_powder{}, and @baking_powder{}.
-5. Combine wet and dry ingredients.
-6. Pour into #pan{} and bake for ~45{minutes}.
-EOF
+    # Seed only selected fixture files for testing
+     for fixture_name in "${FIXTURES_TO_SEED[@]}"; do
+         fixture_file="$SCRIPT_DIR/tests/fixtures/${fixture_name}.cook"
+         if [ -f "$fixture_file" ]; then
+             cp "$fixture_file" "$TEST_REPO_DIR/recipes/desserts/${fixture_name}.cook"
+         fi
+    done
     
     git add .
     git commit -q -m "Initial test recipes"
@@ -149,38 +171,43 @@ EOF
     
     # Run tests
     test_results=0
+    EXPECTED_FIXTURE_COUNT=${#FIXTURES_TO_SEED[@]}
     
     # Test 1: Health check
     if ! run_test "Health Check" "GET" "/health" "" "200"; then
         test_results=$((test_results + 1))
     fi
     
-    # Test 2: Status endpoint
-    if ! run_test "Status Endpoint" "GET" "/api/v1/status" "" "200"; then
+    # Test 2: Status endpoint - verify recipe count matches fixtures
+    if ! run_test "Status Endpoint" "GET" "/api/v1/status" "" "200" \
+        "validate_status $EXPECTED_FIXTURE_COUNT"; then
         test_results=$((test_results + 1))
     fi
     
-    # Test 3: List categories
-    if ! run_test "List Categories" "GET" "/api/v1/categories" "" "200"; then
+    # Test 3: List categories - verify desserts category exists
+    if ! run_test "List Categories" "GET" "/api/v1/categories" "" "200" \
+        "validate_categories"; then
         test_results=$((test_results + 1))
     fi
     
-    # Test 4: List recipes
-    if ! run_test "List Recipes" "GET" "/api/v1/recipes" "" "200"; then
+    # Test 4: List recipes - verify recipes were seeded
+    if ! run_test "List Recipes" "GET" "/api/v1/recipes" "" "200" \
+        "validate_recipes_list"; then
         test_results=$((test_results + 1))
     fi
     
     # Test 5: Create recipe
     if ! run_test "Create Recipe" "POST" "/api/v1/recipes" \
-        '{"name":"Vanilla Cake","content":"Simple cake\n\n@flour{2%cup}","category":"desserts"}' \
+        '{"name":"New Test Recipe","content":"---\ntitle: New Test Recipe\n---\n\n@flour{2%cup}","category":"desserts"}' \
         "201"; then
         test_results=$((test_results + 1))
     fi
     
-    # Test 6: Search recipes
-    if ! run_test "Search Recipes" "GET" "/api/v1/recipes/search?q=cake" "" "200"; then
-        test_results=$((test_results + 1))
-    fi
+     # Test 6: Search recipes - verify search returns results
+     if ! run_test "Search Recipes" "GET" "/api/v1/recipes/search?q=cake" "" "200" \
+         "validate_search_results cake"; then
+         test_results=$((test_results + 1))
+     fi
     
     echo ""
     
