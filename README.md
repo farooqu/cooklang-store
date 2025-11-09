@@ -18,20 +18,18 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ## Project Status
 
-✅ **Phase 3 Complete** - Testing, deployment, and documentation finished.
+✅ **Phase 4 in Progress** - CI/CD pipeline and testing integration
 
-**Phase 2 Complete**: Core recipe engine and REST API
-- Milestone 2.1: CookLang Parser Integration ✅
-- Milestone 2.2: Recipe Storage (Git + In-Memory Cache) ✅
-- Milestone 2.3: Git Integration Layer ✅
-- Milestone 2.4: Basic REST API ✅
-
-**Phase 3 Complete**: Testing & Deployment
+**Phase 3 Complete**: Testing, deployment, and documentation
 - Milestone 3.1: Docker Setup & Local Testing ✅
 - Milestone 3.2: Comprehensive Integration Tests ✅
 - Milestone 3.3: API Documentation & Testing Tools ✅
 
-**Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage
+**Phase 4 in Progress**: CI/CD & Testing Integration
+- Milestone 4.1: CI/CD Pipeline Setup ✅ (GitHub Actions with zero-cost hosted runners)
+- Milestone 4.2: Integration Test Suite (planned)
+
+**Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage + GitHub Actions CI/CD
 
 ## Goals
 
@@ -146,8 +144,9 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 - [docs/openapi.yaml](docs/openapi.yaml) - OpenAPI 3.0 specification (import into Swagger UI or other tools)
 - [docs/postman-collection.json](docs/postman-collection.json) - Postman collection for API testing
 - [docs/SAMPLE-RECIPES.md](docs/SAMPLE-RECIPES.md) - Sample recipes for testing API endpoints
-- [docs/TESTING.md](docs/TESTING.md) - Testing guide (24 integration tests, Docker tests, CI/CD)
+- [docs/TESTING.md](docs/TESTING.md) - Testing guide (72 integration tests, Docker tests, CI/CD)
 - [docs/DOCKER-TESTING.md](docs/DOCKER-TESTING.md) - Docker testing guide (requires only Docker, no Rust)
+- [docs/CI-CD.md](docs/CI-CD.md) - GitHub Actions CI/CD pipeline documentation
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - Architecture decisions and development roadmap
 - [AGENTS.md](AGENTS.md) - Coding conventions and guidelines for AI agents
 

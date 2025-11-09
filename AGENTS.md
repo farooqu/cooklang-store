@@ -157,6 +157,15 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 5. Update documentation (see Documentation Maintenance below)
 6. Create pull request
 
+**CRITICAL: Use Checklists to Track Milestone Implementation**:
+- For each milestone being implemented, create a detailed checklist BEFORE starting work
+- Use the checklist to organize the work into clear, verifiable tasks
+- Structure it like: Core Implementation → Infrastructure → Documentation → Quality Standards → Verification
+- Check off items as you complete them - this keeps progress visible and prevents scope creep
+- Update relevant docs (PROJECT_PLAN.md, README.md, etc.) as you complete sections
+- Once the milestone is complete, delete the checklist file (it served its purpose)
+- This approach prevents context fragmentation and ensures nothing is forgotten
+
 **CRITICAL: API Documentation Synchronization**:
 When you modify ANY API endpoint, you MUST update these files in the same commit:
 - [ ] `src/api/handlers.rs` - Endpoint implementation
@@ -176,6 +185,7 @@ Failure to update all three files will cause documentation drift and confusion f
 |------|-----------------|----------|
 | **docs/TESTING.md** | When adding tests, debugging tests, or setting up CI/CD | 24 integration tests with git verification, Docker tests, test helpers, CI/CD examples, coverage targets |
 | **docs/DOCKER-TESTING.md** | When testing Docker image, preparing for deployment, or creating CI/CD pipeline | Docker test script guide, test coverage, debugging Docker tests, CI/CD integration |
+| **docs/CI-CD.md** | When setting up GitHub Actions, monitoring pipelines, or extending CI/CD | GitHub Actions workflows, caching strategy, troubleshooting, cost analysis, extending workflows |
 | **docs/API.md** | When adding API endpoints or documenting API changes | REST API endpoint documentation with examples |
 | **docs/openapi.yaml** | When viewing/updating machine-readable API spec or importing into Swagger UI | Complete OpenAPI 3.0 specification of all endpoints, schemas, and responses |
 | **docs/postman-collection.json** | When manually testing API endpoints or sharing testing tools | Postman collection with all endpoints, test requests, and environment variables |

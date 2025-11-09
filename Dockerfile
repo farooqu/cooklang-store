@@ -4,7 +4,8 @@ FROM rust:1.83-slim as builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     pkg-config \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -24,10 +25,12 @@ FROM debian:bookworm-slim
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     ca-certificates \
     libssl3 \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from builder
@@ -41,5 +44,9 @@ ENV RUST_LOG=info
 ENV RECIPES_PATH=/data/recipes
 
 EXPOSE 3000
+
+# Health check for orchestration systems
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
 
 CMD ["cooklang-backend"]
