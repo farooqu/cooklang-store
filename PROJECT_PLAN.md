@@ -67,8 +67,6 @@ The following are intentionally excluded as they go beyond the core purpose of p
 
 ### Known Issues
 
-- [ ] **Docker Test Failure**: Create Recipe test fails in GitHub Actions with error "Failed to write file: recipes/desserts/vanilla-cake.cook". Need to investigate file creation logic, permissions, or git configuration in Docker environment.
-
 - [ ] **Description Field**: Response includes "description" field that's always null. Either remove it or extract actual description from .cook file metadata/content.
 
 ### Completed
