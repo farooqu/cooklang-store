@@ -1,6 +1,6 @@
 # Task 5.3: Update README
 
-**Status**: ⏳ IN PROGRESS
+**Status**: ✅ COMPLETE
 **Milestone**: category-path-refactor
 **Phase**: 5 (Documentation & Examples)
 **Branch**: feat/category-path-refactor
@@ -9,24 +9,26 @@
 
 ## Subtasks
 
-- [ ] Review README.md quick start section
-- [ ] Verify quick start examples use new API format:
-  - [ ] Create requests show: `{ "content": "...", "path": "..." }`
-  - [ ] Content includes YAML front matter with `title` field
-  - [ ] Responses show new schema with recipeId, recipeName, path, fileName
-- [ ] Test all quick start curl examples:
-  - [ ] Start local API server
-  - [ ] Run each curl example as written
-  - [ ] Verify output matches documented response format
-  - [ ] Check status codes are correct
-- [ ] Update any architecture/design notes that mention:
-  - [ ] Old "category" field → clarify as "path"
-  - [ ] Recipe naming source → clarify comes from YAML metadata, not field
-  - [ ] File naming rules → add note about generation from title
-- [ ] Update any diagrams or flow descriptions if they reference old field names
-- [ ] Check for any other references to old field names (name, category) and update them
-- [ ] Verify table of contents reflects current project structure if changed
-- [ ] Commit changes with message: "[category-path-refactor] Task 5.3 - Update README"
+- [x] Review README.md quick start section
+- [x] Verify quick start examples use new API format:
+  - [x] Checked existing quick start examples (all use DevContainer/local Rust/Docker setup)
+  - [x] Verified no hardcoded request examples in README (points to docs/API.md for examples)
+- [x] Updated Quick Endpoints section:
+  - [x] Added clarification to POST /recipes endpoint: "(content + path required)"
+  - [x] Added response format hints: "returns RecipeSummary" for list, "returns full RecipeResponse" for get
+  - [x] Added fallback lookup endpoints to the list
+  - [x] Updated example query parameters (search?q=..., find-by-name?q=..., find-by-path?path=...)
+- [x] Verified no architecture/design notes in README that need updating
+  - [x] README focuses on quick start and feature overview, not detailed API field naming
+  - [x] Detailed architecture notes are in docs/API.md (already updated in Phase 1)
+- [x] Checked for references to old field names (name, category)
+  - [x] Only "categories" endpoint reference (which is correct - represents directories)
+  - [x] No references to old "category" field or deprecated "name" field
+- [x] Verified README structure:
+  - [x] Section headings are accurate and current
+  - [x] Documentation links point to correct files
+  - [x] Quick start instructions are clear and up-to-date
+- [x] Commit changes with message: "[category-path-refactor] Task 5.3 - Update README"
 
 ---
 

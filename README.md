@@ -137,12 +137,14 @@ The server provides a RESTful API for recipe management on `/api/v1`.
 **Quick Endpoints**:
 - `GET /health` - Health check
 - `GET /api/v1/status` - Server status and stats
-- `POST /api/v1/recipes` - Create recipe
-- `GET /api/v1/recipes` - List recipes (paginated)
-- `GET /api/v1/recipes/:recipe_id` - Get recipe
-- `PUT /api/v1/recipes/:recipe_id` - Update recipe
+- `POST /api/v1/recipes` - Create recipe (content + path required)
+- `GET /api/v1/recipes` - List recipes (paginated, returns RecipeSummary)
+- `GET /api/v1/recipes/:recipe_id` - Get recipe (returns full RecipeResponse with content)
+- `PUT /api/v1/recipes/:recipe_id` - Update recipe (content and/or path)
 - `DELETE /api/v1/recipes/:recipe_id` - Delete recipe
-- `GET /api/v1/recipes/search` - Search recipes by name
+- `GET /api/v1/recipes/search?q=...` - Search recipes by name
+- `GET /api/v1/recipes/find-by-name?q=...` - Find recipes by name (fallback lookup)
+- `GET /api/v1/recipes/find-by-path?path=...` - Find recipe by path (fallback lookup)
 - `GET /api/v1/categories` - List categories
 - `GET /api/v1/categories/:name` - Get recipes in category
 
