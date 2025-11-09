@@ -1,6 +1,6 @@
 # Cooklang Recipe Store
 
-A service for managing, storing, and serving Cooklang recipe files.
+A self-hosted REST API for managing Cooklang recipe files. It provides a pluggable storage backend (disk or git) and a fast in-memory cache for browsing and searching your recipe collection.
 
 ## What is Cooklang?
 
@@ -18,28 +18,29 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ## Project Status
 
-✅ **Phase 4 in Progress** - CI/CD pipeline and testing integration
+🚀 **Early Alpha** - Core features implemented and tested, ready for self-hosted deployment
 
-**Phase 3 Complete**: Testing, deployment, and documentation
-- Milestone 3.1: Docker Setup & Local Testing ✅
-- Milestone 3.2: Comprehensive Integration Tests ✅
-- Milestone 3.3: API Documentation & Testing Tools ✅
+**Completed**:
+- Full CRUD operations for Cooklang recipes
+- Hierarchical categories with path support
+- Git repository backend with version control
+- 218 passing tests (unit + integration + doc tests)
+- Docker deployment with docker-compose
+- REST API with OpenAPI documentation
+- JWT authentication framework
+- CI/CD pipeline with GitHub Actions
 
-**Phase 4 in Progress**: CI/CD & Testing Integration
-- Milestone 4.1: CI/CD Pipeline Setup ✅ (GitHub Actions with zero-cost hosted runners)
-- Milestone 4.2: Integration Test Suite (planned)
+**Tech Stack**: Rust 1.83+ + Axum + In-Memory Cache (DashMap) + Git storage + Docker + GitHub Actions
 
-**Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage + GitHub Actions CI/CD
+## Core Features
 
-## Goals
-
-- Provide a RESTful API for recipe management
-- Parse and validate Cooklang recipe files (using official `cooklang-rs`)
-- Store recipes in git repository for version control
-- Support recipe search, filtering, and tagging
-- Enable recipe scaling and shopping list generation
-- Offer meal planning capabilities
-- Multi-user support with JWT authentication
+- **REST API**: Full CRUD operations for recipe management
+- **Cooklang Parser**: Parse and validate Cooklang recipe files using the official `cooklang-rs` crate
+- **Git Storage**: Store recipes in a git repository for version control and history
+- **Hierarchical Categories**: Organize recipes into nested categories with full path support
+- **In-Memory Cache**: Fast search and browsing with automatic cache invalidation
+- **Docker Deployment**: Self-hosted containerized deployment with `docker-compose`
+- **API Documentation**: Complete OpenAPI specification and Postman collection included
 
 ## Quick Start
 
@@ -162,10 +163,21 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - Architecture decisions and development roadmap
 - [AGENTS.md](AGENTS.md) - Coding conventions and guidelines for AI agents
 
+## Roadmap
+
+**Future Features** (not in v1):
+- Full-text search and filtering
+- Advanced recipe search (by ingredients, cooking time, etc.)
+- Recipe images and step-level attachments
+- Multi-user support with role-based access control
+- Advanced authentication and permission management
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for architecture decisions and the complete roadmap.
+
 ## Contributing
 
-*Coming soon*
+Contributions are welcome. Please open an issue or pull request.
 
 ## License
 
-*To be determined*
+MIT
