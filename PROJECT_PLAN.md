@@ -61,6 +61,16 @@ The following are intentionally excluded as they go beyond the core purpose of p
 
 ## Technical Debt & Ongoing Tasks
 
+### Known Issues
+
+- [ ] **Docker Test Failure**: Create Recipe test fails in GitHub Actions with error "Failed to write file: recipes/desserts/vanilla-cake.cook". Need to investigate file creation logic, permissions, or git configuration in Docker environment.
+
+- [ ] **Category Field Semantics**: Response includes "category" field but should clarify it's actually the recipe's git path. Consider renaming to "path" for clarity and ensure all path-related logic (hierarchical storage, filtering, etc.) works correctly.
+
+- [ ] **Description Field**: Response includes "description" field that's always null. Either remove it or extract actual description from .cook file metadata/content.
+
+### Ongoing Tasks
+
 - [ ] Maintain >80% test coverage
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning
