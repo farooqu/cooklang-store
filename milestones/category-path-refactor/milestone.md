@@ -72,48 +72,13 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ## Phase 2: Core Business Logic ✅ COMPLETE
 
-Completed Nov 9, 2025:
+**Completed** (Nov 9, 2025):
 - Added `extract_recipe_title()` to parse YAML front matter and extract recipe titles
 - Added `generate_filename()` and `normalize_path()` utilities for filename generation and path validation
 - Added `should_rename_file()` to detect when files need renaming
 - Updated repository layer (`create()`, `update()`, `rebuild_from_storage()`) to handle title extraction, filename generation, and file renaming
 - Added comprehensive unit tests (134 total) covering title extraction, filename generation, rename detection, and repository operations
 - Added integration tests (70 total) validating YAML front matter requirements and file renaming behavior
-
-### Task 2.1: Add Recipe Metadata Extraction Utility ✅ COMPLETE
-- [x] Create new function `extract_recipe_title(content: &str) -> Result<String, Error>`
-- [x] Parse Cooklang content to extract title from YAML front matter (metadata section)
-- [x] Front matter format: YAML block delimited by `---` at start of file
-- [x] Extract `title` field from YAML front matter (case-insensitive key lookup)
-- [x] Handle edge cases: empty content, missing title, invalid YAML, malformed front matter
-- [x] Add unit tests for title extraction (valid cases, edge cases, missing title)
-- [x] Document expected format:
-```
----
-title: Recipe Name
----
-```
-- [x] Reference Cooklang spec: https://cooklang.org/docs/spec/ for front matter format
-
-### Task 2.2: Add Filename Generation & Normalization ✅ COMPLETE
-- [x] Create function `generate_filename(title: &str) -> String`
-- [x] Convert title to lowercase, replace spaces/special chars with hyphens
-- [x] Append `.cook` extension
-- [x] Add unit tests (normal names, special chars, unicode, etc.)
-- [x] Create function to normalize paths (remove leading/trailing slashes, validate allowed chars)
-
-### Task 2.3: Handle File Renaming Logic ✅ COMPLETE
-- [x] Create function `should_rename_file(old_name: &str, new_title: &str) -> bool`
-- [x] Detect misalignment: generated name ≠ actual file name
-- [x] Return true if names differ (always sync on write operations)
-- [x] Add unit tests for various scenarios
-
-### Task 2.4: Update Repository Layer ✅ COMPLETE
-- [x] Modify `Recipe` struct if needed to ensure `git_path` is always accurate
-- [x] Update `create()` method to: extract title from content, generate filename, create in correct path
-- [x] Update `update()` method to: extract title, detect if rename needed, perform rename in git
-- [x] Ensure `list_all()` populates `recipe_name` correctly (derived from git_path filename)
-- [x] Add tests for create/update operations with file renaming
 
 ---
 
