@@ -14,17 +14,17 @@ pub fn load_recipe_fixture(name: &str) -> String {
 }
 
 /// Copy a fixture file from tests/fixtures/ to the temp directory's recipes folder.
-/// 
+///
 /// This is useful for tests that need pre-existing recipe files on disk.
 /// The fixture content is read from `tests/fixtures/{fixture_name}.cook` and written to
 /// the temp directory at `recipes/{category}/{filename}`.
-/// 
+///
 /// # Arguments
 /// - `temp_dir`: The temporary directory created for the test (from setup_api_with_storage)
 /// - `fixture_name`: The name of the fixture file (without .cook extension)
 /// - `category`: Optional category path (e.g., "desserts/cakes" for nested categories)
 /// - `filename`: The filename to write in the recipes directory (e.g., "my-recipe.cook")
-/// 
+///
 /// # Example
 /// ```ignore
 /// let (build_router, temp_dir) = setup_api_with_storage("git").await;
@@ -32,11 +32,16 @@ pub fn load_recipe_fixture(name: &str) -> String {
 /// copy_fixture_to_recipes_dir(&temp_dir, "test-recipe", Some("desserts"), "test-recipe.cook");
 /// // Now verify it exists or perform operations on it
 /// ```
-pub fn copy_fixture_to_recipes_dir(temp_dir: &TempDir, fixture_name: &str, category: Option<&str>, filename: &str) {
+pub fn copy_fixture_to_recipes_dir(
+    temp_dir: &TempDir,
+    fixture_name: &str,
+    category: Option<&str>,
+    filename: &str,
+) {
     let fixture_path = format!("tests/fixtures/{}.cook", fixture_name);
     let content = std::fs::read_to_string(&fixture_path)
         .unwrap_or_else(|_| panic!("Failed to load recipe fixture: {}", fixture_path));
-    
+
     let recipes_dir = if let Some(cat) = category {
         let mut path = temp_dir.path().join("recipes");
         for part in cat.split('/') {
@@ -46,9 +51,9 @@ pub fn copy_fixture_to_recipes_dir(temp_dir: &TempDir, fixture_name: &str, categ
     } else {
         temp_dir.path().join("recipes")
     };
-    
+
     fs::create_dir_all(&recipes_dir).expect("Failed to create recipes directory");
-    
+
     let file_path = recipes_dir.join(filename);
     fs::write(&file_path, &content).expect("Failed to write fixture file to temp directory");
 }
@@ -71,10 +76,10 @@ pub async fn setup_api_with_storage(storage_type: &str) -> (impl Fn() -> axum::R
 }
 
 /// Setup API with pre-seeded fixture files.
-/// 
+///
 /// Use this when tests need pre-existing recipe files on disk.
 /// This creates the temp directory, seeds the specified fixtures, then initializes the repository.
-/// 
+///
 /// # Example
 /// ```ignore
 /// let (build_router, temp_dir) = setup_api_with_seeded_fixtures("git", vec![
@@ -87,12 +92,12 @@ pub async fn setup_api_with_seeded_fixtures(
     fixtures: Vec<(&str, Option<&str>, &str)>,
 ) -> (impl Fn() -> axum::Router, TempDir) {
     let temp_dir = TempDir::new().unwrap();
-    
+
     // Seed all fixtures first
     for (fixture_name, category, filename) in fixtures {
         copy_fixture_to_recipes_dir(&temp_dir, fixture_name, category, filename);
     }
-    
+
     // Now create repository - it will load the seeded files into cache
     let repo = RecipeRepository::with_storage(temp_dir.path(), storage_type)
         .await
@@ -193,7 +198,11 @@ pub fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -
         path.join(&filename)
     } else {
         // Single-level category
-        temp_dir.path().join("recipes").join(category).join(&filename)
+        temp_dir
+            .path()
+            .join("recipes")
+            .join(category)
+            .join(&filename)
     };
     fs::read_to_string(&path).expect("Failed to read recipe file")
 }

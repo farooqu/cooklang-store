@@ -108,7 +108,7 @@ async fn test_create_recipe_impl(backend: &str) -> TempDir {
 #[tokio::test]
 async fn test_create_recipe_git() {
     let temp_dir = test_create_recipe_impl("git").await;
-    
+
     // Git-specific verification: commit was made
     let commit_count = count_git_commits(&temp_dir);
     assert!(commit_count > 0, "Expected at least one commit in git repo");
@@ -226,7 +226,7 @@ async fn test_create_recipe_empty_category_impl(backend: &str) -> TempDir {
 #[tokio::test]
 async fn test_create_recipe_empty_category_git() {
     let temp_dir = test_create_recipe_empty_category_impl("git").await;
-    
+
     // Git-specific verification
     let commit_count = count_git_commits(&temp_dir);
     assert!(commit_count > 0, "Expected at least one commit in git repo");
@@ -764,10 +764,13 @@ async fn test_update_recipe_impl(backend: &str) -> TempDir {
 #[tokio::test]
 async fn test_update_recipe_git() {
     let temp_dir = test_update_recipe_impl("git").await;
-    
+
     // Git-specific verification
     let commit_count = count_git_commits(&temp_dir);
-    assert!(commit_count >= 2, "Expected at least 2 commits (create + update) in git repo");
+    assert!(
+        commit_count >= 2,
+        "Expected at least 2 commits (create + update) in git repo"
+    );
 }
 
 #[tokio::test]
@@ -870,10 +873,13 @@ async fn test_delete_recipe_impl(backend: &str) -> TempDir {
 #[tokio::test]
 async fn test_delete_recipe_git() {
     let temp_dir = test_delete_recipe_impl("git").await;
-    
+
     // Git-specific verification
     let commit_count = count_git_commits(&temp_dir);
-    assert!(commit_count >= 2, "Expected at least 2 commits (create + delete) in git repo");
+    assert!(
+        commit_count >= 2,
+        "Expected at least 2 commits (create + delete) in git repo"
+    );
 }
 
 #[tokio::test]
@@ -983,7 +989,7 @@ async fn test_create_recipe_in_nested_category_impl(backend: &str) -> TempDir {
 #[tokio::test]
 async fn test_create_recipe_in_nested_category_git() {
     let temp_dir = test_create_recipe_in_nested_category_impl("git").await;
-    
+
     // Git-specific verification
     let commit_count = count_git_commits(&temp_dir);
     assert!(commit_count > 0);
@@ -997,7 +1003,11 @@ async fn test_create_recipe_in_nested_category_disk() {
 async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_seeded_fixtures(
         backend,
-        vec![("thai-green-curry", Some("meals/asian/thai"), "thai-green-curry.cook")],
+        vec![(
+            "thai-green-curry",
+            Some("meals/asian/thai"),
+            "thai-green-curry.cook",
+        )],
     )
     .await;
 
@@ -1016,7 +1026,7 @@ async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     let recipe_id = recipes[0]["recipe_id"].as_str().unwrap().to_string();
     assert_eq!(recipes[0]["name"], "Thai Green Curry");
     assert_eq!(recipes[0]["category"], "meals/asian/thai");
-    
+
     // Verify content contains expected ingredient
     let app2 = build_router();
     let response = app2
@@ -1036,9 +1046,9 @@ async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     assert_eq!(json["name"], "Thai Green Curry");
     assert_eq!(json["category"], "meals/asian/thai");
     assert!(json["content"]
-    .as_str()
-    .unwrap()
-    .contains("@coconut-milk{400%ml}"));
+        .as_str()
+        .unwrap()
+        .contains("@coconut-milk{400%ml}"));
 }
 
 #[tokio::test]
@@ -1125,7 +1135,11 @@ async fn test_get_recipes_from_nested_category_impl(backend: &str) {
         vec![
             ("pad-thai", Some("meals/asian/thai"), "pad-thai.cook"),
             ("green-curry", Some("meals/asian/thai"), "green-curry.cook"),
-            ("spaghetti", Some("meals/european/italian"), "spaghetti.cook"),
+            (
+                "spaghetti",
+                Some("meals/european/italian"),
+                "spaghetti.cook",
+            ),
         ],
     )
     .await;
@@ -1241,7 +1255,11 @@ async fn test_list_categories_includes_nested_impl(backend: &str) {
         backend,
         vec![
             ("tiramisu", Some("desserts/cakes/italian"), "tiramisu.cook"),
-            ("cheesecake", Some("desserts/cakes/american"), "cheesecake.cook"),
+            (
+                "cheesecake",
+                Some("desserts/cakes/american"),
+                "cheesecake.cook",
+            ),
             ("flan", Some("desserts/custards"), "flan.cook"),
         ],
     )
