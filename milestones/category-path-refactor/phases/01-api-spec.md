@@ -1,4 +1,8 @@
-# Phase 1: API Specification Checklist
+# Phase 1: API Specification
+
+**Status**: ✅ COMPLETE
+**Milestone**: category-path-refactor
+**Completed**: Nov 9, 2025
 
 ## Task 1.1: Update OpenAPI Spec (openapi.yaml)
 

@@ -1,8 +1,12 @@
-# Task: Update & Extend Docker Smoke Tests for Phase 2 Path Handling Changes
+# TASK: Docker Smoke Tests for Phase 2 Path Handling Changes
 
-## Context
+**Status**: ✅ COMPLETE
+**Milestone**: category-path-refactor
+**Completed**: Nov 9, 2025
 
-Phase 2.4 has introduced significant changes to how recipes are stored and renamed based on their YAML front matter titles:
+## Context (Historical Record)
+
+Phase 2.4 introduced significant changes to how recipes are stored and renamed based on their YAML front matter titles:
 
 - **Title Extraction**: Recipe titles are now extracted from YAML front matter `title` field
 - **Filename Generation**: Filenames are generated from extracted titles (lowercase, hyphenated)

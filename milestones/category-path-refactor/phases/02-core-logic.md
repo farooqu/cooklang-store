@@ -1,8 +1,8 @@
-# Phase 2 Checklist: Core Business Logic
+# Phase 2: Core Business Logic
 
-**Milestone**: Category Field Semantics & Path Handling Refactor  
-**Phase**: 2 (Core Business Logic)  
 **Status**: ✅ COMPLETE
+**Milestone**: category-path-refactor
+**Completed**: Nov 9, 2025
 
 ---
 

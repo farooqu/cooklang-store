@@ -134,6 +134,67 @@ scripts/docker-test.sh         # Test Docker image
 | **docs/TESTING.md** | Test patterns, coverage targets, CI/CD info |
 | **docs/DOCKER-TESTING.md** | Docker test script guide and debugging |
 
+## Milestone Tracking & Documentation
+
+**Directory Structure**: All milestone-related documents go in `milestones/{milestone-name}/`:
+```
+milestones/
+├── category-path-refactor/
+│   ├── milestone.md          # Main milestone spec and architecture
+│   ├── phases/
+│   │   ├── 01-api-spec.md    # Phase checklist
+│   │   ├── 02-core-logic.md  # Phase checklist
+│   │   └── 03-api-layer.md   # Phase checklist
+│   └── tasks/
+│       ├── TASK-extract-metadata.md
+│       └── TASK-docker-tests.md
+```
+
+**When to Create Documents**:
+- **Milestone.md**: Before starting any milestone work. Contains full spec, phases, and definition of done.
+- **Phase.md**: When starting a new phase within the milestone. Contains detailed checklist and tasks for that phase.
+- **Task.md**: When a phase is large (likely to exceed context window). Contains focused checklist for ONE task.
+
+**Phase/Task Naming**:
+- Phases: `{phase-number}-{description}.md` (e.g., `01-api-spec.md`)
+- Tasks: `TASK-{name}.md` (e.g., `TASK-extract-metadata.md`)
+
+**Checklist Format** (at top of phase/task file):
+```markdown
+# Phase {N}: {Description}
+
+**Status**: ✅ COMPLETE | ⏳ IN PROGRESS | ❌ NOT STARTED
+**Milestone**: {milestone-name}
+**Phase**: {N} ({description})
+**Branch**: {feature-branch-name}
+
+---
+
+## Task {N}.{N}: {Description}
+
+- [x] Subtask 1
+- [x] Subtask 2
+- [ ] Subtask 3 (if in progress)
+```
+
+**Cleanup Rules**:
+1. When a phase is **100% complete**: commit the final changes, then delete the phase file from `phases/` directory
+2. When a task is **100% complete**: commit the final changes, then delete the task file from `tasks/` directory
+3. Update the milestone.md to reflect completion (mark phase as ✅ COMPLETE)
+4. Keep milestone.md in the repo as historical record (never delete)
+
+**Context Window Management**:
+- If approaching context limit while working on a task:
+  1. Commit your current work: `git add . && git commit -m "[{milestone-name}] Current progress on {task/phase}"`
+  2. Add a note at top of phase/task file with last completed item and next action
+  3. Next agent resumes from the note
+
+**Before Handing Off**:
+1. Update the phase/task file with current status
+2. Add clear notes about what's done and what's next
+3. Commit changes
+4. Include the file path in the handoff message for next agent
+
 ## Code Conventions
 
 - Write clean, readable code with meaningful variable names
