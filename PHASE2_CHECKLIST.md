@@ -45,12 +45,20 @@
 
 ---
 
-## Task 2.3: Handle File Renaming Logic
+## Task 2.3: Handle File Renaming Logic ✅ COMPLETE
 
-- [ ] Create function `should_rename_file(old_name: &str, new_title: &str) -> bool`
-- [ ] Detect misalignment: generated name ≠ actual file name
-- [ ] Return true if names differ (always sync on write operations)
-- [ ] Add unit tests for various scenarios
+- [x] Create function `should_rename_file(old_name: &str, new_title: &str) -> bool`
+- [x] Detect misalignment: generated name ≠ actual file name
+- [x] Return true if names differ (always sync on write operations)
+- [x] Add unit tests for various scenarios
+
+**Implementation Details**:
+- Added `should_rename_file(old_filename: &str, new_title: &str) -> bool` in `src/parser/mod.rs`
+- Compares current filename with generated filename from new title
+- Returns true if they differ (rename needed), false if they match
+- Handles various edge cases: title changes, whitespace variations, special character normalization, unicode
+- 19 comprehensive unit tests covering all scenarios
+- All 125 existing tests still pass; no regressions
 
 **Commit Message**: `[Phase2.3] Add file renaming detection logic`
 

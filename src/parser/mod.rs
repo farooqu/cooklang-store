@@ -190,6 +190,43 @@ pub fn normalize_path(path: &str) -> Result<String> {
     Ok(trimmed.to_string())
 }
 
+/// Detects if a file should be renamed based on the old filename and new recipe title.
+///
+/// This function:
+/// - Compares the current filename with the generated filename from the new title
+/// - Returns `true` if they differ (rename needed)
+/// - Returns `false` if they match (no rename needed)
+///
+/// This handles cases where:
+/// - Recipe title has changed (requires file rename)
+/// - File is misaligned with its title (should be corrected on update)
+/// - Content structure changes but filename remains correct
+///
+/// # Arguments
+/// * `old_filename` - The current filename (e.g., "chocolate-cake.cook")
+/// * `new_title` - The new recipe title (e.g., "Dark Chocolate Cake")
+///
+/// # Returns
+/// * `true` - If the generated filename differs from old filename (rename needed)
+/// * `false` - If filenames match (no rename needed)
+///
+/// # Examples
+/// ```
+/// # use cooklang_store::parser::should_rename_file;
+/// // Title changed: Dark Chocolate Cake vs original Chocolate Cake
+/// assert!(should_rename_file("chocolate-cake.cook", "Dark Chocolate Cake"));
+///
+/// // Title unchanged: same generated filename
+/// assert!(!should_rename_file("chocolate-cake.cook", "Chocolate Cake"));
+///
+/// // Title spacing differs but generates same filename
+/// assert!(!should_rename_file("chocolate-cake.cook", "  Chocolate   Cake  "));
+/// ```
+pub fn should_rename_file(old_filename: &str, new_title: &str) -> bool {
+    let generated_filename = generate_filename(new_title);
+    generated_filename != old_filename
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -668,5 +705,156 @@ Add @eggs{2} to the bowl."#;
             normalize_path("/recipes/desserts/my_5-ingredient_cake.cook/").unwrap(),
             "recipes/desserts/my_5-ingredient_cake.cook"
         );
+    }
+
+    // Tests for should_rename_file
+    #[test]
+    fn test_should_rename_file_title_changed() {
+        // Title changed from "Chocolate Cake" to "Dark Chocolate Cake"
+        assert!(should_rename_file(
+            "chocolate-cake.cook",
+            "Dark Chocolate Cake"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_title_unchanged() {
+        // Title remains the same, no rename needed
+        assert!(!should_rename_file("chocolate-cake.cook", "Chocolate Cake"));
+    }
+
+    #[test]
+    fn test_should_rename_file_title_with_extra_whitespace() {
+        // Title has different whitespace but generates same filename
+        assert!(!should_rename_file(
+            "chocolate-cake.cook",
+            "  Chocolate   Cake  "
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_case_difference() {
+        // Case differs but generates same lowercase filename
+        assert!(!should_rename_file("chocolate-cake.cook", "CHOCOLATE CAKE"));
+    }
+
+    #[test]
+    fn test_should_rename_file_special_chars_removed() {
+        // Special characters are normalized away, resulting in same filename
+        assert!(!should_rename_file(
+            "quick-easy-recipe.cook",
+            "Quick & Easy Recipe"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_multiple_spaces_to_hyphens() {
+        // Multiple spaces normalized to single hyphens
+        assert!(!should_rename_file(
+            "chocolate-cake.cook",
+            "Chocolate    Cake"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_leading_trailing_spaces() {
+        // Leading/trailing spaces are trimmed during filename generation
+        assert!(!should_rename_file(
+            "chocolate-cake.cook",
+            "  Chocolate Cake  "
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_word_removed() {
+        // One word removed from title
+        assert!(should_rename_file(
+            "chocolate-layer-cake.cook",
+            "Chocolate Cake"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_word_added() {
+        // New word added to title
+        assert!(should_rename_file(
+            "chocolate-cake.cook",
+            "Decadent Chocolate Cake"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_word_order_changed() {
+        // Words reordered changes the filename
+        assert!(should_rename_file("chocolate-cake.cook", "Cake Chocolate"));
+    }
+
+    #[test]
+    fn test_should_rename_file_apostrophe_handling() {
+        // Apostrophe normalized to hyphen
+        assert!(!should_rename_file(
+            "mom-s-secret-sauce.cook",
+            "Mom's Secret Sauce"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_parentheses_removed() {
+        // Parentheses and content normalized away
+        assert!(!should_rename_file(
+            "pasta-homemade.cook",
+            "Pasta (Homemade)"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_unicode_chars() {
+        // Unicode characters preserved (lowercase transformation)
+        assert!(!should_rename_file(
+            "gâteau-chocolat-français.cook",
+            "Gâteau Chocolat Français"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_numbers_in_title() {
+        // Numbers preserved in filename
+        assert!(!should_rename_file(
+            "5-ingredient-chili.cook",
+            "5-Ingredient Chili"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_dots_in_title() {
+        // Dots preserved in filenames (e.g., "1.5")
+        assert!(!should_rename_file(
+            "1.5-liter-smoothie.cook",
+            "1.5 Liter Smoothie"
+        ));
+    }
+
+    #[test]
+    fn test_should_rename_file_significant_title_change() {
+        // Completely different title
+        assert!(should_rename_file("chocolate-cake.cook", "Vanilla Pudding"));
+    }
+
+    #[test]
+    fn test_should_rename_file_single_character_difference() {
+        // Single character change in title
+        assert!(should_rename_file("chocolate-cake.cook", "Chocolate Cakee"));
+    }
+
+    #[test]
+    fn test_should_rename_file_empty_old_filename() {
+        // Edge case: empty old filename (should rename if new title generates non-empty)
+        assert!(should_rename_file("", "Chocolate Cake"));
+    }
+
+    #[test]
+    fn test_should_rename_file_both_empty() {
+        // Both empty or generate empty filenames
+        assert!(!should_rename_file(".cook", ""));
     }
 }
