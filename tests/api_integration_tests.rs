@@ -1258,3 +1258,53 @@ async fn test_list_categories_includes_nested() {
     assert!(categories.contains(&"desserts/cakes/american".to_string()));
     assert!(categories.contains(&"desserts/custards".to_string()));
 }
+
+#[tokio::test]
+async fn test_move_between_different_category_structures() {
+    let (build_router, _) = setup_api().await;
+    let app1 = build_router();
+
+    // Create recipe in one category structure
+    let create_payload = serde_json::json!({
+        "name": "Author's Dinner",
+        "content": "# Special dinner\n\n@beef{500%g}",
+        "category": "author1/dinner/meat"
+    });
+
+    let response = app1
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(create_payload)))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+
+    assert_eq!(json["category"], "author1/dinner/meat");
+
+    // Move to completely different category structure
+    let app2 = build_router();
+    let update_payload = serde_json::json!({
+        "category": "author2/meat/dinner"
+    });
+
+    let response = app2
+        .oneshot(make_request(
+            "PUT",
+            &format!("/api/v1/recipes/{}", recipe_id),
+            Some(update_payload),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    // Verify category updated to new structure
+    assert_eq!(json["category"], "author2/meat/dinner");
+    assert_eq!(json["name"], "Author's Dinner");
+}
