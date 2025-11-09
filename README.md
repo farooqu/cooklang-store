@@ -18,15 +18,18 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ## Project Status
 
-✅ **Phase 2 Partial Complete** - Core recipe engine and REST API implemented.
+✅ **Phase 3 In Progress** - Docker setup & testing complete.
 
-**Completed**:
+**Phase 2 Complete**: Core recipe engine and REST API
 - Milestone 2.1: CookLang Parser Integration ✅
 - Milestone 2.2: Recipe Storage (Git + In-Memory Cache) ✅
 - Milestone 2.3: Git Integration Layer ✅
 - Milestone 2.4: Basic REST API ✅
 
-**In Progress**: Enhanced search & filtering features
+**Phase 3 In Progress**: Testing & Deployment
+- Milestone 3.1: Docker Setup & Local Testing ✅
+- Milestone 3.2: Bug Fixes & Stability (in progress)
+- Milestone 3.3: API Documentation & Testing Tools (planned)
 
 **Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage
 
@@ -44,8 +47,8 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ### Prerequisites
 - **VSCode + Dev Containers extension** (recommended for consistent dev environment)
-- OR Rust 1.75+ ([install from rustup.rs](https://rustup.rs))
-- Docker (for containerized deployment)
+- OR Rust 1.83+ ([install from rustup.rs](https://rustup.rs))
+- Docker (for containerized deployment and testing without Rust)
 
 ### Development Setup (Recommended: DevContainer)
 
@@ -76,6 +79,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 git clone <your-repo-url>
 cd cooklang-backend
 cargo run
+
+# Run tests
+cargo test
 ```
 
 ### Docker Deployment
@@ -90,6 +96,22 @@ docker-compose logs -f
 # Stop
 docker-compose down
 ```
+
+### Docker Testing (Without Rust)
+
+Test the Docker image without needing Rust installed:
+
+```bash
+# Run integration tests (builds image, tests API endpoints, cleans up)
+scripts/docker-test.sh
+```
+
+This script:
+- Creates an isolated test recipe repository in `/tmp`
+- Builds the Docker image
+- Starts a container with the test recipes
+- Tests core API endpoints with curl
+- Automatically cleans up resources
 
 ### Configuration
 
@@ -122,6 +144,8 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 ## Documentation
 
 - [docs/API.md](docs/API.md) - Full REST API documentation and examples
+- [docs/TESTING.md](docs/TESTING.md) - Testing guide (24 integration tests, Docker tests, CI/CD)
+- [docs/DOCKER-TESTING.md](docs/DOCKER-TESTING.md) - Docker testing guide (requires only Docker, no Rust)
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - Architecture decisions and development roadmap
 - [AGENTS.md](AGENTS.md) - Coding conventions and guidelines for AI agents
 

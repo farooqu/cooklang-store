@@ -92,11 +92,12 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - **Format**: `cargo fmt`
 - **Check without building**: `cargo check`
 
-### Production
+### Production & Deployment
 - **Build release**: `cargo build --release`
 - **Run with Docker**: `docker-compose up -d`
 - **View logs**: `docker-compose logs -f`
 - **Stop**: `docker-compose down`
+- **Test Docker image**: `scripts/docker-test.sh` (requires Docker, no Rust needed)
 
 ## Development Workflow
 
@@ -140,6 +141,7 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 - ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
 - ✅ **Recipe ID**: SHA256 hash of git_path (first 12 hex chars) - URL-friendly, deterministic, allows looking up recipes by ID in API while maintaining git_path internally
 - ✅ **Thread Safety**: git2::Repository wrapped in Mutex to allow Arc<RecipeRepository> in Axum state
+- ✅ **Rust Version**: 1.83+ (required for Cargo.lock v4 format used in dependencies)
 
 **API Module Structure** (`src/api/`):
 - `mod.rs`: Router builder and route definitions
@@ -155,6 +157,18 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 5. Update documentation (see Documentation Maintenance below)
 6. Create pull request
 
+## Documentation Files Reference
+
+**Important**: When working on testing, deployment, or architectural tasks, consult the relevant documentation files:
+
+| File | When to Consult | Contains |
+|------|-----------------|----------|
+| **docs/TESTING.md** | When adding tests, debugging tests, or setting up CI/CD | 24 integration tests with git verification, Docker tests, test helpers, CI/CD examples, coverage targets |
+| **docs/DOCKER-TESTING.md** | When testing Docker image, preparing for deployment, or creating CI/CD pipeline | Docker test script guide, test coverage, debugging Docker tests, CI/CD integration |
+| **docs/API.md** | When adding API endpoints or documenting API changes | REST API endpoint documentation with examples |
+| **PROJECT_PLAN.md** | Before starting ANY work | Current project phase, completed milestones, architectural decisions, technical debt |
+| **README.md** | When updating installation, quick start, or project status | Quick start guide, project status, feature list, deployment instructions |
+
 ## Documentation Maintenance
 
 **IMPORTANT**: AI agents MUST keep documentation in sync with code changes.
@@ -167,12 +181,13 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
   - Make technology stack decisions
   - Add new project structure directories
   - Change development workflow
+  - Create new .md documentation files (add to reference table above)
 
 - **README.md**: Update whenever you:
   - Change project goals or features
   - Add quick start instructions
   - Update project status or milestones
-  - Add new documentation files
+  - Add new documentation files (update links)
   - Change installation or setup steps
 
 - **PROJECT_PLAN.md**: Update whenever you:
@@ -181,6 +196,17 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
   - Add or remove planned features
   - Identify new technical debt
   - Change project priorities or timeline
+
+- **docs/TESTING.md**: Update whenever you:
+  - Add new test cases or test patterns
+  - Change test coverage
+  - Add testing utilities or helpers
+  - Update CI/CD testing approach
+
+- **docs/DOCKER-TESTING.md**: Update whenever you:
+  - Change Docker test script behavior
+  - Add new Docker test scenarios
+  - Update deployment testing approach
 
 ### Documentation Update Rule
 

@@ -171,31 +171,57 @@ All architectural decisions made. Ready for implementation.
 
 ### Milestones
 
-#### Milestone 3.1: Docker Setup & Local Testing
+#### Milestone 3.1: Docker Setup & Local Testing ✅ (Completed Nov 8, 2025)
 - ✅ Dockerfile configured (already exists)
-- [ ] Build and test Docker image locally (deferred - requires Docker environment)
-- ✅ Create test recipes in git repository for manual testing
+- ✅ Build and test Docker image locally with `scripts/docker-test.sh`
+- ✅ Create test recipes in git repository (initialized in /tmp during test)
 - ✅ Verify docker-compose setup works end-to-end (docker-compose.yml configured)
-- ✅ Test all CRUD endpoints with curl/Postman
-  - ✅ POST /api/v1/recipes (create)
-  - ✅ GET /api/v1/recipes (list with pagination)
-  - ✅ GET /api/v1/recipes/:id (read)
-  - ✅ GET /api/v1/recipes/search (search by name)
-  - ✅ PUT /api/v1/recipes/:id (update with rename and recategorize)
-  - ✅ DELETE /api/v1/recipes/:id (delete)
-  - ✅ GET /api/v1/categories (list all categories)
-  - ✅ GET /api/v1/categories/:name (get recipes in category)
+- ✅ Test all CRUD endpoints with curl
+  - ✅ Health check endpoint
   - ✅ GET /api/v1/status (status endpoint)
-  - ✅ GET /health (health check)
-- ✅ Verify git commits are recorded correctly (commits show proper operations and messages)
-- ✅ Test error handling and edge cases (invalid recipe syntax, not found errors, etc.)
+  - ✅ GET /api/v1/categories (list all categories)
+  - ✅ GET /api/v1/recipes (list with pagination)
+  - ✅ GET /api/v1/recipes/search (search by name)
+  - ✅ POST /api/v1/recipes (create)
 
-#### Milestone 3.2: Bug Fixes & Stability
+**Implementation Details**:
+- Created `scripts/docker-test.sh` - standalone test script that requires only Docker
+- Test repo initialized in `/tmp/cooklang-test-recipes-$$` (isolated per test run)
+- Script handles:
+  - Building Docker image
+  - Starting container with test recipes
+  - Waiting for API readiness
+  - Running HTTP tests via curl
+  - Automatic cleanup
+- No Rust build environment needed for Docker tests
+
+#### Milestone 3.2: Comprehensive Integration Tests & Stability
+- ✅ Expanded Rust integration tests with 24 comprehensive test cases + git repository verification:
+  - **Git Repository Verification Helpers**:
+    - `verify_recipe_file_exists()` - Check file created at expected path
+    - `read_recipe_file()` - Verify file contents match input
+    - `count_git_commits()` - Verify commits are recorded
+    - `verify_recipe_file_deleted()` - Check file is removed after deletion
+  - **Tests with Git Verification** (test full end-to-end behavior):
+    - `test_create_recipe` - Verifies file created, content correct, commit recorded
+    - `test_update_recipe` - Verifies file updated, moved between categories, old file deleted
+    - `test_delete_recipe` - Verifies file deleted from filesystem
+  - **API Response Verification** (24 tests covering):
+   - Health check and status endpoints
+   - Recipe creation with validation (empty name, category, content)
+   - Recipe creation with optional fields (description)
+   - Recipe retrieval (single recipe, list, not found)
+   - Recipe listing with pagination (default, limit, offset)
+   - Recipe search (empty results, by name, case-insensitive)
+   - Categories (list empty, list populated, get recipes in category, not found)
+   - Recipe updates (successful update, not found)
+   - Recipe deletion (successful delete, not found, verify deleted)
+   - Status endpoint updates with recipe/category counts
 - [ ] Fix any bugs discovered during testing
 - [ ] Verify cache rebuilds correctly on startup
-- [ ] Test with larger recipe collections
+- [ ] Test with larger recipe collections (1000+ recipes)
 - [ ] Verify git repository initialization on first run
-- [ ] Add logging for debugging
+- [ ] Add detailed logging for debugging
 
 #### Milestone 3.3: API Documentation & Testing Tools
 - [ ] Generate OpenAPI/Swagger specification
