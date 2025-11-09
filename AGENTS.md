@@ -139,9 +139,11 @@ A self-hosted service for managing Cooklang recipe files. Cooklang is a markup l
 - ✅ **Storage**: Pluggable backend architecture with DiskStorage (default) and GitStorage options - source of truth on filesystem + in-memory cache for queries
 - ✅ **API**: REST (simple, self-hosted friendly)
 - ✅ **Parser**: Official `cooklang-rs` crate (v0.6)
-- ✅ **Recipe ID**: SHA256 hash of git_path (first 12 hex chars) - URL-friendly, deterministic, allows looking up recipes by ID in API while maintaining git_path internally
+- ✅ **Recipe ID**: SHA256 hash of git_path (first 12 hex chars) - URL-friendly, deterministic, allows looking up recipes by ID in API while maintaining git_path internally. **Changes on rename** (file rename when title changes). Fallback lookup endpoints for ID recovery.
+- ✅ **Recipe Name/Title**: Derived from Cooklang YAML front matter `title` field (not stored separately in API). File names auto-generated and kept in sync with titles. YAML format: `---\ntitle: Recipe Name\n---`
 - ✅ **Thread Safety**: Git2::Repository wrapped in Mutex for DiskStorage in git mode; atomic operations per storage backend
 - ✅ **Rust Version**: 1.83+ (required for Cargo.lock v4 format used in dependencies)
+- ✅ **Cooklang Validation**: All recipe content must include YAML front matter with `title` field (enforced on create/update). Missing title → 400 Bad Request.
 
 **API Module Structure** (`src/api/`):
 - `mod.rs`: Router builder and route definitions
@@ -160,11 +162,12 @@ A self-hosted service for managing Cooklang recipe files. Cooklang is a markup l
 **CRITICAL: Use Checklists to Track Milestone Implementation**:
 - For each milestone being implemented, create a detailed checklist BEFORE starting work
 - Use the checklist to organize the work into clear, verifiable tasks
-- Structure it like: Core Implementation → Infrastructure → Documentation → Quality Standards → Verification
+- Structure it like: Specification → Core Logic → API Layer → Documentation → Testing & Verification
 - Check off items as you complete them - this keeps progress visible and prevents scope creep
 - Update relevant docs (PROJECT_PLAN.md, README.md, etc.) as you complete sections
 - Once the milestone is complete, delete the checklist file (it served its purpose)
 - This approach prevents context fragmentation and ensures nothing is forgotten
+- Example: `MILESTONE_CATEGORY_PATH_REFACTOR.md` shows the format with phases and tasks
 
 **CRITICAL: API Documentation Synchronization**:
 When you modify ANY API endpoint, you MUST update these files in the same commit:
