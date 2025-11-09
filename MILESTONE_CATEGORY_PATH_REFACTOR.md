@@ -61,64 +61,12 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ## Phase 1: API Specification ✅ COMPLETE
 
-### Task 1.1: Update OpenAPI Spec (openapi.yaml) ✅
-
-**RecipeResponse schema**:
-- [ ] Update to include: `recipeId`, `recipeName`, `path`, `fileName`, `description`, `content`
-- [ ] Mark required: `recipeId`, `recipeName`, `content`
-- [ ] Mark optional: `path`, `description` (nullable)
-- [ ] Add `fileName` as required string
-- [ ] Add `x-nullable: true` or use nullable for `description` and `path`
-
-**RecipeSummary schema**:
-- [ ] Update to include: `recipeId`, `recipeName`, `path`
-- [ ] Remove: `fileName`, `content`, `description`
-- [ ] Mark required: `recipeId`, `recipeName`
-- [ ] Mark optional: `path`
-
-**CreateRecipeRequest schema**:
-- [ ] Keep only: `content` (required), `path` (optional), `author` (optional), `comment` (optional)
-- [ ] Remove: `name`, `category`
-
-**UpdateRecipeRequest schema**:
-- [ ] Keep only: `content` (optional), `path` (optional), `author` (optional), `comment` (optional)
-- [ ] Add validation note: at least one of `content` or `path` required
-- [ ] Remove: `name`, `category`
-
-**Fallback Endpoints** (new):
-- [ ] Add `GET /api/v1/recipes/find-by-name` operation
-  - [ ] Query param: `q` (search term, required)
-  - [ ] Query params: `limit`, `offset` (pagination, optional)
-  - [ ] Response: array of `RecipeSummary` (similar to list endpoint)
-- [ ] Add `GET /api/v1/recipes/find-by-path` operation
-  - [ ] Query param: `path` (recipe path, required)
-  - [ ] Response: single `RecipeSummary`
-  - [ ] 404 if path not found
-
-**Misc**:
-- [ ] Update all endpoint response examples to use new RecipeResponse/RecipeSummary format
-- [ ] Update all request examples to match new payloads
-- [ ] Add note about Recipe ID stability in spec description or info section
-- [ ] Validate YAML syntax: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"`
-
-### Task 1.2: Update API.md Documentation ✅
-- [ ] Update Common Response Format section with both RecipeResponse and RecipeSummary schemas
-- [ ] Add note: null fields omitted from JSON (using `skip_serializing_if`)
-- [ ] Update Create Recipe endpoint: show request with only `content` and optional `path`, `author`, `comment`
-- [ ] Update Create Recipe response: full RecipeResponse format with all fields
-- [ ] Update List Recipes endpoint: response is RecipeSummary (no fileName, no content, no description)
-- [ ] Update Get Single Recipe endpoint: full RecipeResponse with all fields and fileName
-- [ ] Update Update Recipe endpoint: request with only optional `content` and `path`
-- [ ] Add new section: "Fallback Lookup Endpoints"
-  - [ ] Document `GET /recipes/find-by-name` with examples
-  - [ ] Document `GET /recipes/find-by-path` with examples
-  - [ ] Explain use case: recovering from recipe ID changes due to renames
-- [ ] Add note about recipe names being derived from Cooklang YAML front matter (`title` field)
-- [ ] Add examples showing YAML front matter format (with `---` delimiters) and how titles map to filenames
-- [ ] Add examples showing how file names are generated from recipe titles (normalization rules)
-- [ ] Add note about file renaming behavior on updates (happens automatically on write)
-- [ ] Add section: "Recipe ID Stability" explaining that IDs change on rename, clients should use lookup endpoints as fallback
-- [ ] Update all curl examples to match new request format with proper front matter
+**Completed** (Nov 9, 2025):
+- Updated OpenAPI spec with new RecipeResponse, RecipeSummary, CreateRecipeRequest, UpdateRecipeRequest schemas
+- Added fallback lookup endpoints: `GET /api/v1/recipes/find-by-name` and `GET /api/v1/recipes/find-by-path`
+- Updated API.md documentation with YAML front matter requirements, Recipe ID stability section, and file name generation rules
+- Updated Postman collection with new request/response formats and fallback endpoint requests
+- All changes use camelCase for JSON fields (recipeId, recipeName, fileName, etc.)
 
 ---
 
