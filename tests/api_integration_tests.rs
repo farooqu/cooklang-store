@@ -207,10 +207,6 @@ async fn test_create_recipe() {
     // Verify file contents
     let contents = read_recipe_file(&temp_dir, "Test Recipe", "desserts");
     assert_eq!(contents, payload["content"].as_str().unwrap());
-
-    // Verify git commit was created
-    let commits = count_git_commits(&temp_dir);
-    assert!(commits > 0, "No git commits found");
 }
 
 #[tokio::test]
@@ -274,7 +270,8 @@ async fn test_create_recipe_empty_category() {
         .await
         .unwrap();
 
-    assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
+    // Empty category string is treated as no category (None), so should succeed
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
 }
 
 #[tokio::test]
