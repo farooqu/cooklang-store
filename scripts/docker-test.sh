@@ -188,6 +188,7 @@ main() {
         --name "$CONTAINER_NAME" \
         -p 3000:3000 \
         -v "$TEST_REPO_DIR:/recipes" \
+        --user root \
         cooklang-store-test
     
     echo -e "${GREEN}Container started${NC}"
