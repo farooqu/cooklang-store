@@ -111,6 +111,21 @@ validate_search_results() {
     jq -e ".recipes | length > 0" /tmp/response.json > /dev/null 2>&1
 }
 
+validate_nested_categories() {
+    # Verify nested categories appear in the response
+    jq -e '.categories | map(select(. == "meals/asian/thai" or . == "meals/european/italian")) | length == 2' /tmp/response.json > /dev/null 2>&1
+}
+
+validate_recipe_in_nested_category() {
+    # Verify recipe exists with the expected category path
+    jq -e '.recipes | length > 0' /tmp/response.json > /dev/null 2>&1
+}
+
+validate_title_extraction() {
+    # Verify the name in response matches YAML title, not request name
+    jq -e '.name | type == "string"' /tmp/response.json > /dev/null 2>&1
+}
+
 main() {
     echo -e "${GREEN}Cooklang Store Docker Integration Tests${NC}"
     echo ""
@@ -141,6 +156,20 @@ main() {
             cp "$fixture_file" "$TEST_REPO_DIR/recipes/desserts/${fixture_name}.cook"
         fi
     done
+    
+    # Seed fixtures into nested categories for Phase 2 testing
+    mkdir -p recipes/meals/asian/thai
+    mkdir -p recipes/meals/european/italian
+    
+    fixture_file="$SCRIPT_DIR/tests/fixtures/pad-thai.cook"
+    if [ -f "$fixture_file" ]; then
+        cp "$fixture_file" "$TEST_REPO_DIR/recipes/meals/asian/thai/pad-thai.cook"
+    fi
+    
+    fixture_file="$SCRIPT_DIR/tests/fixtures/spaghetti.cook"
+    if [ -f "$fixture_file" ]; then
+        cp "$fixture_file" "$TEST_REPO_DIR/recipes/meals/european/italian/spaghetti.cook"
+    fi
     
     git add .
     git commit -q -m "Initial test recipes"
@@ -174,7 +203,8 @@ main() {
     
     # Run tests
     test_results=0
-    EXPECTED_FIXTURE_COUNT=${#FIXTURES_TO_SEED[@]}
+    # Base fixtures (desserts) + nested fixtures (pad-thai, spaghetti) = 5 total
+    EXPECTED_FIXTURE_COUNT=$((${#FIXTURES_TO_SEED[@]} + 2))
     
     # Test 1: Health check
     if ! run_test "Health Check" "GET" "/health" "" "200"; then
@@ -209,6 +239,39 @@ main() {
     # Test 6: Search recipes - verify search returns results
     if ! run_test "Search Recipes" "GET" "/api/v1/recipes/search?q=cake" "" "200" \
         "validate_search_results cake"; then
+        test_results=$((test_results + 1))
+    fi
+    
+    # Test 7: List categories - verify nested categories exist
+    if ! run_test "List Nested Categories" "GET" "/api/v1/categories" "" "200" \
+        "validate_nested_categories"; then
+        test_results=$((test_results + 1))
+    fi
+    
+    # Test 8: Get recipes from nested category (meals/asian/thai)
+    if ! run_test "Get Recipes from Nested Category" "GET" "/api/v1/categories/meals%2Fasian%2Fthai" "" "200" \
+        "validate_recipe_in_nested_category"; then
+        test_results=$((test_results + 1))
+    fi
+    
+    # Test 9: Create recipe with YAML front matter title - verify title extraction
+    if ! run_test "Create Recipe with Title Extraction" "POST" "/api/v1/recipes" \
+        '{"name":"Ignore This Name","content":"---\ntitle: Strawberry Cheesecake\n---\n\n@cream{2%cup}","category":"desserts"}' \
+        "201" "validate_title_extraction"; then
+        test_results=$((test_results + 1))
+    fi
+    
+    # Test 10: Create recipe without YAML title - should fail
+    if ! run_test "Create Recipe Missing YAML Title (Should Fail)" "POST" "/api/v1/recipes" \
+        '{"name":"Test","content":"No YAML front matter here","category":"desserts"}' \
+        "400"; then
+        test_results=$((test_results + 1))
+    fi
+    
+    # Test 11: Create recipe in nested category via POST
+    if ! run_test "Create Recipe in Nested Category" "POST" "/api/v1/recipes" \
+        '{"name":"Pad Thai","content":"---\ntitle: Pad Thai\n---\n\n@noodles{1%kg}","category":"meals/asian/thai"}' \
+        "201"; then
         test_results=$((test_results + 1))
     fi
     

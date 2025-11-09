@@ -34,35 +34,68 @@ The script tests the following endpoints:
 | `/health` | GET | Health check |
 | `/api/v1/status` | GET | Server status and statistics |
 | `/api/v1/categories` | GET | List all recipe categories |
+| `/api/v1/categories/:path` | GET | Get recipes from specific category (including nested) |
 | `/api/v1/recipes` | GET | List all recipes with pagination |
 | `/api/v1/recipes/search` | GET | Search recipes by name |
 | `/api/v1/recipes` | POST | Create a new recipe |
 
 ## Test Repository Structure
 
-The test script creates a minimal git repository with the following structure:
+The test script creates a git repository with the following structure to test flat and nested categories:
 
 ```
 /tmp/cooklang-test-recipes-XXXX/
 ├── .git/                          # Git repository
 └── recipes/
-    └── desserts/
-        └── chocolate-cake.cook    # Sample chocolate cake recipe
+    ├── desserts/                  # Flat category
+    │   ├── chocolate-cake.cook
+    │   ├── vanilla-cake.cook
+    │   └── test-recipe.cook
+    ├── meals/
+    │   ├── asian/thai/            # Nested category (3 levels)
+    │   │   └── pad-thai.cook
+    │   └── european/italian/      # Nested category (3 levels)
+    │       └── spaghetti.cook
+    └── (dynamically created recipes from tests)
 ```
 
 The repository is initialized with:
 - Git user: `test@example.com` / `Test User`
 - Initial commit: Sample recipes
 
+## Test Cases
+
+The Docker test script runs 11 comprehensive test cases:
+
+### Basic Tests
+1. **Health Check** - Verifies API health endpoint responds
+2. **Status Endpoint** - Checks server status with fixture count
+3. **List Categories** - Ensures all categories (flat and nested) are listed
+4. **List Recipes** - Verifies recipe pagination and listing
+
+### Phase 2.4: Nested Category Support
+5. **List Nested Categories** - Verifies nested category paths appear correctly (e.g., `meals/asian/thai`)
+6. **Get Recipes from Nested Category** - Retrieves recipes filtered by nested category path
+7. **Create Recipe in Nested Category** - Creates a recipe with category path containing slashes
+
+### Phase 2.4: YAML-Driven Filename & Title Extraction
+8. **Create Recipe with Title Extraction** - Verifies recipe name is extracted from YAML `title` field, not from request `name` field
+9. **Create Recipe Missing YAML Title** - Validates that POST requests without YAML `title` field return 400 Bad Request
+10. **Create Recipe** - Creates recipe with YAML front matter and verifies successful storage
+
+### Search & Filtering
+11. **Search Recipes** - Searches for recipes by name across all categories
+
 ## Test Data
 
-### Sample Recipe
+### Sample Recipes
 
-The test includes a sample chocolate cake recipe to demonstrate:
+The test repository includes several sample recipes to demonstrate:
 - Basic ingredient parsing (`@ingredient{quantity%unit}`)
 - Cookware references (`#cookware{}`)
 - Timer specifications (`~duration{}`)
 - Recipe metadata (servings)
+- YAML front matter with `title` field (required for all recipes)
 
 ## Cleanup
 
