@@ -20,74 +20,73 @@ Complete implementation:
 - 10 REST API endpoints with OpenAPI specification
 - Postman collection and sample recipes for testing
 
-## Phase 4: Optimization & DevOps
+## Phase 4: CI/CD & Testing Integration
 
 ### Milestones
 
-#### Milestone 4.1: Performance & Monitoring
-- Performance benchmarking
-- Caching layer optimization (beyond basic in-memory)
-- Rate limiting implementation
-- Request logging and monitoring
-- Response time optimization
+#### Milestone 4.1: CI/CD Pipeline Setup
+- Continuous integration pipeline for Rust application
+- Automated testing on pull requests
+- Docker image building and publishing
+- Container registry integration
+- Deployment automation
 
-#### Milestone 4.2: Deployment & Operations
-- CI/CD pipeline setup
-- Environment configuration management
-- Git repository backup strategy
-- Logging and error tracking
-- Health check endpoints (may already exist)
-
-#### Milestone 4.3: Testing Coverage
-- Complete integration test suite
-- Load testing
-- Security audit
-- Maintain >80% code coverage
+#### Milestone 4.2: Integration Test Suite
+- Complete integration test suite (24+ tests)
+- Automated test execution in CI/CD
+- Docker-based test environment
+- Test coverage verification (maintain >80%)
 
 ## Phase 5: Search & Filtering
 
 ### Milestones
 
-#### Milestone 5.1: Advanced Search
-- Full-text search on recipe names and steps
-- Filter by ingredients
-- Filter by categories (already have listing, add filtering)
+#### Milestone 5.1: Search & Filter by Name
+- Full-text search on recipe names
+- Fuzzy matching for typo tolerance
+
+#### Milestone 5.2: Filter by Ingredients
+- Filter recipes by ingredient presence
+- Support ingredient-based queries
+
+#### Milestone 5.3: Filter by Categories
+- Filter recipes by category
+- Category listing with filtering
+
+## Deferred Features
+
+Features not critical to the core purpose of CRUD operations on `.cook` files:
+
+### Storage Flexibility
+- **Make git optional**: Support persisting recipes directly to disk without git, for simpler deployments that don't need version history
+
+### Advanced Searching & Filtering
+- Full-text search on recipe steps
 - Filter by cooking time
-- Sort by date, name, etc.
+- Sort by date, name, and other fields
+- Advanced filtering combinations
 
-#### Milestone 5.2: Shopping List Generation
-- Shopping list generation from multiple recipes
-- Ingredient unit conversion
-- Aggregation and normalization
+### Operational Enhancements
+- Environment configuration management
+- Health check endpoints
+- Request logging and monitoring
 
-## Phase 6: Future Enhancements
-
-### Deferred Features
-- **Multi-user support & Authentication**: Can be added if self-hosting multiple users becomes a requirement
-- **Import/Export**: Useful for recipe migration, but not core CRUD functionality
-- **Meal Planning**: Belongs in frontend, not backend
-- **Recipe Ratings/Reviews**: Social features deferred
-- **OCR, AI Recommendations**: Advanced features for future consideration
+### Out of Scope
+The following are intentionally excluded as they go beyond the core purpose of persisting raw `.cook` files:
+- Rate limiting, performance benchmarking, load testing
+- Shopping list generation, ingredient conversion, import/export
+- Multi-user support, advanced authentication
+- Recipe ratings/reviews, meal planning
+- Mobile apps, OCR, AI recommendations, smart kitchen integrations
 
 ## Technical Debt & Ongoing Tasks
 
 - [ ] **DESIGN MISMATCH - Category Structure**: Current implementation treats categories as flat (single-level) - only the first subdirectory under `recipes/` is extracted as the category. A path like `recipes/meals/meat/traditional/chicken-biryani.cook` has category="meals", ignoring "meat/traditional". Need to decide:
-  - Should categories support hierarchical nesting (e.g., "meals > meat > traditional")?
-  - Or should the API structure restrict to `recipes/{category}/{slug}.cook` only?
-  - Update implementation and documentation once decided
+- Should categories support hierarchical nesting (e.g., "meals > meat > traditional")?
+- Or should the API structure restrict to `recipes/{category}/{slug}.cook` only?
+- Update implementation and documentation once decided
 - [ ] Maintain >80% test coverage
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning
-- [ ] Performance monitoring and optimization
 - [ ] API versioning strategy
 - [ ] Backward compatibility considerations
-
-## Future Considerations
-
-- Mobile app integration
-- Browser extension for recipe import
-- OCR for scanning physical recipes
-- AI-powered recipe recommendations
-- Recipe variation tracking
-- Ingredient substitution suggestions
-- Integration with smart kitchen devices
