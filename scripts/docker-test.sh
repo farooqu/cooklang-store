@@ -131,12 +131,15 @@ main() {
     # Create recipes directory
     mkdir -p recipes/desserts
     
+    # Ensure directory exists in git repo with .gitkeep
+    touch recipes/desserts/.gitkeep
+    
     # Seed only selected fixture files for testing
-     for fixture_name in "${FIXTURES_TO_SEED[@]}"; do
-         fixture_file="$SCRIPT_DIR/tests/fixtures/${fixture_name}.cook"
-         if [ -f "$fixture_file" ]; then
-             cp "$fixture_file" "$TEST_REPO_DIR/recipes/desserts/${fixture_name}.cook"
-         fi
+    for fixture_name in "${FIXTURES_TO_SEED[@]}"; do
+        fixture_file="$SCRIPT_DIR/tests/fixtures/${fixture_name}.cook"
+        if [ -f "$fixture_file" ]; then
+            cp "$fixture_file" "$TEST_REPO_DIR/recipes/desserts/${fixture_name}.cook"
+        fi
     done
     
     git add .
@@ -203,11 +206,11 @@ main() {
         test_results=$((test_results + 1))
     fi
     
-     # Test 6: Search recipes - verify search returns results
-     if ! run_test "Search Recipes" "GET" "/api/v1/recipes/search?q=cake" "" "200" \
-         "validate_search_results cake"; then
-         test_results=$((test_results + 1))
-     fi
+    # Test 6: Search recipes - verify search returns results
+    if ! run_test "Search Recipes" "GET" "/api/v1/recipes/search?q=cake" "" "200" \
+        "validate_search_results cake"; then
+        test_results=$((test_results + 1))
+    fi
     
     echo ""
     
