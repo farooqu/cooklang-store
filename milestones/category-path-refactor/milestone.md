@@ -104,9 +104,13 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ---
 
-## Phase 5: Documentation & Examples ❌ NOT STARTED
+## Phase 5: Documentation & Examples ✅ COMPLETE
 
-See: `milestones/category-path-refactor/phases/05-documentation.md`
+**Completed** (Nov 9, 2025):
+- Updated Postman collection with response examples for all endpoints
+- Demonstrated ID change scenario: create → title change → find-by-name lookup
+- Removed SAMPLE-RECIPES.md, updated API.md to reference test fixtures
+- Updated README quick start endpoints with fallback lookups and response format hints
 
 ---
 
