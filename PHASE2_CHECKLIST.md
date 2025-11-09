@@ -64,13 +64,13 @@
 
 ---
 
-## Task 2.4: Update Repository Layer
+## Task 2.4: Update Repository Layer ✅ COMPLETE
 
 - [x] Modify `Recipe` struct if needed to ensure `git_path` is always accurate
 - [x] Update `create()` method to: extract title from content, generate filename, create in correct path
 - [x] Update `update()` method to: extract title, detect if rename needed, perform rename in git
 - [x] Ensure `list_all()` populates `recipe_name` correctly (derived from git_path filename)
-- [ ] Add tests for create/update operations with file renaming
+- [x] Add tests for create/update operations with file renaming
 
 **Implementation Details**:
 - `Recipe` struct has `git_path`, `file_name`, `name` (recipe title), `description`, `category`, `content`
@@ -113,18 +113,27 @@ Current integration tests use old API contract:
 - All list tests (`test_list_recipes_*`, `test_search_recipes_*`) - Need update after Phase 3
 
 **New integration tests to add**:
-- [ ] `test_create_recipe_missing_yaml_front_matter()` - POST without YAML front matter → 400 Bad Request
-- [ ] `test_create_recipe_with_valid_yaml_front_matter()` - POST with valid YAML → extracts title
-- [ ] `test_update_recipe_title_causes_filename_change()` - Update content with new title → file renamed
-- [ ] `test_id_change_on_rename_scenario()` - Full scenario showing ID stability behavior:
+- [x] `test_create_recipe_missing_yaml_front_matter()` - POST without YAML front matter → 400 Bad Request
+- [x] `test_create_recipe_with_valid_yaml_front_matter()` - POST with valid YAML → extracts title
+- [x] `test_update_recipe_title_causes_filename_change()` - Update content with new title → file renamed
+- [x] `test_id_change_on_rename_scenario()` - Full scenario showing ID stability behavior:
   - Create recipe with title "Chocolate Cake" → capture ID A
   - Update recipe content with new title "Dark Chocolate Cake" → verify old ID A returns 404
   - Verify find-by-name endpoint returns recipe with new ID B (after Phase 4)
   - Verify subsequent operations use new ID B
 
 **Commit Messages**:
-1. `[Phase2.4] Add unit tests for repository layer title extraction and file renaming`
-2. `[Phase2.4] Add integration tests for YAML front matter validation and file renaming behavior`
+1. ✅ `[Phase2.4] Add unit tests for repository layer title extraction and file renaming` 
+   - 9 comprehensive unit tests covering create/update operations, file renaming, recipe ID changes
+   - All 134 unit tests passing
+2. ✅ `[Phase2.4] Add integration tests for YAML front matter validation and file renaming behavior`
+   - 8 new integration tests (4 feature tests × 2 backends: git & disk)
+   - test_create_recipe_missing_yaml_front_matter: Validates YAML requirement
+   - test_create_recipe_with_valid_yaml_front_matter: Validates title extraction
+   - test_update_recipe_title_causes_filename_change: Validates file rename on title change
+   - test_id_change_on_rename_scenario: Validates recipe_id change and old ID invalidation
+   - All 70 integration tests passing
+   - Total test suite: 208 tests passing (134 unit + 70 integration + 4 doc)
 
 ---
 

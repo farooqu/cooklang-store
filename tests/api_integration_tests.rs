@@ -1363,3 +1363,270 @@ async fn test_move_between_different_category_structures_git() {
 async fn test_move_between_different_category_structures_disk() {
     test_move_between_different_category_structures_impl("disk").await;
 }
+
+// ============================================================================
+// YAML FRONT MATTER & FILE RENAMING TESTS (PHASE 2.4)
+// ============================================================================
+
+async fn test_create_recipe_missing_yaml_front_matter_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
+    let app = build_router();
+
+    // Content without YAML front matter (no title field)
+    let content = "---\ndescription: This is just a description\n---\n\nNo title provided.";
+    let payload = serde_json::json!({
+        "name": "Test Recipe",
+        "content": content,
+        "category": "desserts"
+    });
+
+    let response = app
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+        .await
+        .unwrap();
+
+    // Should return 400 Bad Request (invalid recipe content)
+    assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
+
+    let body = extract_response_body(response).await;
+    assert!(body.to_lowercase().contains("invalid"));
+}
+
+#[tokio::test]
+async fn test_create_recipe_missing_yaml_front_matter_git() {
+    test_create_recipe_missing_yaml_front_matter_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_create_recipe_missing_yaml_front_matter_disk() {
+    test_create_recipe_missing_yaml_front_matter_impl("disk").await;
+}
+
+async fn test_create_recipe_with_valid_yaml_front_matter_impl(backend: &str) {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
+    let app = build_router();
+
+    // Content with valid YAML front matter including title
+    let content = "---\ntitle: Chocolate Cake\ndescription: Rich chocolate cake\n---\n\nMix flour with cocoa.";
+    let payload = serde_json::json!({
+        "name": "Test Recipe",
+        "content": content,
+        "category": "desserts"
+    });
+
+    let response = app
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    // The name in the response should be from YAML title, not the request name
+    assert_eq!(json["name"], "Chocolate Cake");
+    assert_eq!(json["category"], "desserts");
+    assert!(json["recipe_id"].is_string());
+
+    // Verify file was created with name derived from title
+    let filename = verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts");
+    assert_eq!(filename, "chocolate-cake.cook");
+
+    let file_contents = read_recipe_file(&temp_dir, "Chocolate Cake", "desserts");
+    assert_eq!(file_contents, content);
+}
+
+#[tokio::test]
+async fn test_create_recipe_with_valid_yaml_front_matter_git() {
+    test_create_recipe_with_valid_yaml_front_matter_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_create_recipe_with_valid_yaml_front_matter_disk() {
+    test_create_recipe_with_valid_yaml_front_matter_impl("disk").await;
+}
+
+async fn test_update_recipe_title_causes_filename_change_impl(backend: &str) {
+    let (build_router, temp_dir) = setup_api_with_storage(backend).await;
+    let app = build_router();
+
+    // Step 1: Create initial recipe
+    let initial_content = "---\ntitle: Brownie\n---\n\nChocolate brownie recipe.";
+    let payload = serde_json::json!({
+        "name": "Brownie",
+        "content": initial_content,
+        "category": "desserts"
+    });
+
+    let response = app
+        .clone()
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    let recipe_id = json["recipe_id"].as_str().unwrap();
+    let initial_filename = "brownie.cook";
+
+    // Verify initial file exists
+    verify_recipe_file_exists(&temp_dir, "Brownie", "desserts");
+
+    // Step 2: Update recipe with new title
+    let updated_content = "---\ntitle: Fudgy Brownie\n---\n\nExtra fudgy chocolate brownie recipe.";
+    let update_payload = serde_json::json!({
+        "content": updated_content
+    });
+
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "PUT",
+            &format!("/api/v1/recipes/{}", recipe_id),
+            Some(update_payload),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    // Name should be updated to new title
+    assert_eq!(json["name"], "Fudgy Brownie");
+    let new_recipe_id = json["recipe_id"].as_str().unwrap();
+
+    // recipe_id should change (because git_path changed)
+    assert_ne!(recipe_id, new_recipe_id);
+
+    // Step 3: Verify file was renamed on disk
+    let new_filename = verify_recipe_file_exists(&temp_dir, "Fudgy Brownie", "desserts");
+    assert_eq!(new_filename, "fudgy-brownie.cook");
+    assert_ne!(initial_filename, new_filename);
+
+    // Verify old file no longer exists
+    let files = std::fs::read_dir(temp_dir.path().join("recipes/desserts"))
+        .unwrap()
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+            if path.is_file() {
+                path.file_name().map(|n| n.to_str().unwrap().to_string())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    assert!(!files.contains(&initial_filename.to_string()));
+    assert!(files.contains(&new_filename.to_string()));
+}
+
+#[tokio::test]
+async fn test_update_recipe_title_causes_filename_change_git() {
+    test_update_recipe_title_causes_filename_change_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_update_recipe_title_causes_filename_change_disk() {
+    test_update_recipe_title_causes_filename_change_impl("disk").await;
+}
+
+async fn test_id_change_on_rename_scenario_impl(backend: &str) {
+    let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
+    let app = build_router();
+
+    // Step 1: Create recipe with initial title
+    let initial_content = "---\ntitle: Chocolate Cake\n---\n\nSimple chocolate cake.";
+    let payload = serde_json::json!({
+        "name": "Chocolate Cake",
+        "content": initial_content,
+        "category": "desserts"
+    });
+
+    let response = app
+        .clone()
+        .oneshot(make_request("POST", "/api/v1/recipes", Some(payload)))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::CREATED);
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    let initial_recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    println!("Initial recipe ID: {}", initial_recipe_id);
+
+    // Step 2: Update recipe content with new title
+    let new_content = "---\ntitle: Dark Chocolate Cake\n---\n\nRich dark chocolate cake.";
+    let update_payload = serde_json::json!({
+        "content": new_content
+    });
+
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "PUT",
+            &format!("/api/v1/recipes/{}", initial_recipe_id),
+            Some(update_payload),
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+
+    let new_recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    println!("New recipe ID: {}", new_recipe_id);
+
+    // Verify recipe_id changed
+    assert_ne!(initial_recipe_id, new_recipe_id);
+    assert_eq!(json["name"], "Dark Chocolate Cake");
+
+    // Step 3: Try to access with old recipe_id - should return 404
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            &format!("/api/v1/recipes/{}", initial_recipe_id),
+            None,
+        ))
+        .await
+        .unwrap();
+
+    // Old ID should not be valid anymore
+    assert_eq!(response.status(), axum::http::StatusCode::NOT_FOUND);
+
+    // Step 4: Verify new recipe_id works
+    let response = app
+        .clone()
+        .oneshot(make_request(
+            "GET",
+            &format!("/api/v1/recipes/{}", new_recipe_id),
+            None,
+        ))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+
+    let body = extract_response_body(response).await;
+    let json: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(json["name"], "Dark Chocolate Cake");
+}
+
+#[tokio::test]
+async fn test_id_change_on_rename_scenario_git() {
+    test_id_change_on_rename_scenario_impl("git").await;
+}
+
+#[tokio::test]
+async fn test_id_change_on_rename_scenario_disk() {
+    test_id_change_on_rename_scenario_impl("disk").await;
+}
