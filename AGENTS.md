@@ -157,6 +157,17 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 5. Update documentation (see Documentation Maintenance below)
 6. Create pull request
 
+**CRITICAL: API Documentation Synchronization**:
+When you modify ANY API endpoint, you MUST update these files in the same commit:
+- [ ] `src/api/handlers.rs` - Endpoint implementation
+- [ ] `docs/API.md` - Human-readable documentation with examples
+- [ ] `docs/openapi.yaml` - Machine-readable OpenAPI spec
+- [ ] `docs/postman-collection.json` - Test requests and examples
+- [ ] `docs/SAMPLE-RECIPES.md` - If adding new testing scenarios
+
+Failure to update all three files will cause documentation drift and confusion for future users.
+**Do not consider the task complete until ALL documentation files are updated.**
+
 ## Documentation Files Reference
 
 **Important**: When working on testing, deployment, or architectural tasks, consult the relevant documentation files:
@@ -166,6 +177,9 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 | **docs/TESTING.md** | When adding tests, debugging tests, or setting up CI/CD | 24 integration tests with git verification, Docker tests, test helpers, CI/CD examples, coverage targets |
 | **docs/DOCKER-TESTING.md** | When testing Docker image, preparing for deployment, or creating CI/CD pipeline | Docker test script guide, test coverage, debugging Docker tests, CI/CD integration |
 | **docs/API.md** | When adding API endpoints or documenting API changes | REST API endpoint documentation with examples |
+| **docs/openapi.yaml** | When viewing/updating machine-readable API spec or importing into Swagger UI | Complete OpenAPI 3.0 specification of all endpoints, schemas, and responses |
+| **docs/postman-collection.json** | When manually testing API endpoints or sharing testing tools | Postman collection with all endpoints, test requests, and environment variables |
+| **docs/SAMPLE-RECIPES.md** | When testing API with realistic data or documenting CookLang examples | 5+ sample recipes in CookLang format with curl/Postman testing instructions |
 | **PROJECT_PLAN.md** | Before starting ANY work | Current project phase, completed milestones, architectural decisions, technical debt |
 | **README.md** | When updating installation, quick start, or project status | Quick start guide, project status, feature list, deployment instructions |
 
@@ -207,9 +221,43 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
   - Update CI/CD testing approach
 
 - **docs/DOCKER-TESTING.md**: Update whenever you:
-  - Change Docker test script behavior
-  - Add new Docker test scenarios
-  - Update deployment testing approach
+- Change Docker test script behavior
+- Add new Docker test scenarios
+- Update deployment testing approach
+
+- **docs/API.md**: Update **MANDATORY** whenever you:
+   - Add, modify, or remove API endpoints
+   - Change request/response schemas
+   - Update error codes or status codes
+   - Add new query parameters or path parameters
+   - Change authentication or authorization behavior
+   - Add new examples or use cases
+   - Include curl and code examples demonstrating the change
+   - **Validation**: Ensure examples are accurate and executable
+
+- **docs/openapi.yaml**: Update **MANDATORY** whenever you:
+   - Add, modify, or remove API endpoints
+   - Change request/response schemas
+   - Update parameter definitions
+   - Change HTTP status codes or error responses
+   - This file is the machine-readable specification; keep it in sync with actual API
+   - **Validation**: Run `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"` to verify YAML syntax
+   - Consider validating with Swagger UI or Insomnia
+
+- **docs/postman-collection.json**: Update **MANDATORY** whenever you:
+   - Add new API endpoints
+   - Add new request/response examples
+   - Change request body structure
+   - Change query parameters
+   - Update environment variable names
+   - This enables manual testing; ensure examples are functional and current
+   - **Validation**: Run `python3 -m json.tool docs/postman-collection.json > /dev/null` to verify JSON syntax
+
+- **docs/SAMPLE-RECIPES.md**: Update whenever you:
+   - Add new API testing scenarios that aren't covered by existing samples
+   - Update example recipes or curl commands if behavior changes
+   - Change testing procedures
+   - Add new CookLang syntax examples
 
 ### Documentation Update Rule
 
@@ -218,6 +266,20 @@ After implementing ANY feature or making significant changes:
 2. Update those files BEFORE marking the task complete
 3. Ensure examples and instructions remain accurate
 4. Keep the docs concise and current - remove outdated information
+
+### API Documentation Synchronization Checklist
+
+**For every API endpoint change**, complete this checklist before submitting:
+
+- [ ] **Code** (`src/api/handlers.rs` or `src/api/mod.rs`): Endpoint implemented and tested
+- [ ] **API.md**: Updated with endpoint description, parameters, request/response examples, and error codes. Include curl examples.
+- [ ] **openapi.yaml**: Updated with endpoint schema, validated YAML syntax with Python
+- [ ] **postman-collection.json**: Added/updated request examples, validated JSON syntax with Python
+- [ ] **SAMPLE-RECIPES.md**: Added example if it demonstrates new functionality (optional)
+- [ ] All files reviewed and examples tested to be accurate
+- [ ] Files formatted and validated before commit
+
+**Why this matters**: Users rely on Postman collection and API.md for integration. OpenAPI is machine-readable. Outdated docs cause wasted debugging time and frustration.
 
 ## CookLang Specification
 

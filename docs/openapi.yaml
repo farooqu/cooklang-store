@@ -1,0 +1,539 @@
+openapi: 3.0.0
+info:
+  title: CookLang Backend API
+  description: RESTful API for managing CookLang recipes stored in git
+  version: 0.1.0
+  contact:
+    name: CookLang Backend
+    url: https://github.com/yourusername/cooklang-backend
+  license:
+    name: TBD
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://cooklang.example.com
+    description: Production server (example)
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Simple health check endpoint
+      tags:
+        - Health
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: OK
+
+  /api/v1/status:
+    get:
+      summary: Get server status
+      description: Returns server status, version, and recipe statistics
+      tags:
+        - Status
+      operationId: getStatus
+      responses:
+        '200':
+          description: Server status and statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /api/v1/recipes:
+    post:
+      summary: Create a new recipe
+      description: Create and store a new recipe in the git repository
+      tags:
+        - Recipes
+      operationId: createRecipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipeRequest'
+      responses:
+        '201':
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List all recipes
+      description: Get paginated list of all recipes
+      tags:
+        - Recipes
+      operationId: listRecipes
+      parameters:
+        - name: limit
+          in: query
+          description: Number of items per page (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of items to skip (for pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of recipes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+
+  /api/v1/recipes/search:
+    get:
+      summary: Search recipes
+      description: Search recipes by name (case-insensitive substring match)
+      tags:
+        - Recipes
+      operationId: searchRecipes
+      parameters:
+        - name: q
+          in: query
+          description: Search query term
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of items per page (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of items to skip (for pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        '400':
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/recipes/{recipe_id}:
+    get:
+      summary: Get a recipe
+      description: Retrieve a single recipe by ID
+      tags:
+        - Recipes
+      operationId: getRecipe
+      parameters:
+        - name: recipe_id
+          in: path
+          required: true
+          description: Unique recipe identifier (12-character hex string)
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{12}$'
+      responses:
+        '200':
+          description: Recipe found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update a recipe
+      description: Update an existing recipe (all fields optional)
+      tags:
+        - Recipes
+      operationId: updateRecipe
+      parameters:
+        - name: recipe_id
+          in: path
+          required: true
+          description: Unique recipe identifier
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{12}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecipeRequest'
+      responses:
+        '200':
+          description: Recipe updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a recipe
+      description: Delete a recipe from the repository
+      tags:
+        - Recipes
+      operationId: deleteRecipe
+      parameters:
+        - name: recipe_id
+          in: path
+          required: true
+          description: Unique recipe identifier
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{12}$'
+      responses:
+        '204':
+          description: Recipe deleted successfully
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/categories:
+    get:
+      summary: List all categories
+      description: Get list of all recipe categories
+      tags:
+        - Categories
+      operationId: listCategories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+
+  /api/v1/categories/{name}:
+    get:
+      summary: Get recipes in a category
+      description: Retrieve all recipes in a specific category
+      tags:
+        - Categories
+      operationId: getCategoryRecipes
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: Category name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recipes in the category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryRecipesResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RecipeResponse:
+      type: object
+      description: Full recipe with content
+      required:
+        - recipe_id
+        - name
+        - content
+      properties:
+        recipe_id:
+          type: string
+          description: Unique recipe identifier (12-character hex)
+          example: a1b2c3d4e5f6
+        name:
+          type: string
+          description: Recipe name
+          example: Chocolate Cake
+        description:
+          type: string
+          nullable: true
+          description: Optional recipe description
+          example: A classic chocolate cake recipe
+        category:
+          type: string
+          nullable: true
+          description: Recipe category
+          example: desserts
+        content:
+          type: string
+          description: Full recipe content in CookLang format
+          example: "# Chocolate Cake\n\n@flour{2%cups} @sugar{1%cup}"
+
+    RecipeSummary:
+      type: object
+      description: Recipe summary (without full content)
+      required:
+        - recipe_id
+        - name
+      properties:
+        recipe_id:
+          type: string
+          description: Unique recipe identifier
+          example: a1b2c3d4e5f6
+        name:
+          type: string
+          description: Recipe name
+          example: Chocolate Cake
+        description:
+          type: string
+          nullable: true
+          description: Optional recipe description
+        category:
+          type: string
+          nullable: true
+          description: Recipe category
+          example: desserts
+
+    RecipeListResponse:
+      type: object
+      description: Paginated list of recipes
+      required:
+        - recipes
+        - pagination
+      properties:
+        recipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    CreateRecipeRequest:
+      type: object
+      description: Request to create a new recipe
+      required:
+        - name
+        - content
+      properties:
+        name:
+          type: string
+          description: Recipe name (required, non-empty)
+          example: Pasta Carbonara
+        content:
+          type: string
+          description: Recipe content in CookLang format (required, non-empty)
+          example: "# Pasta Carbonara\n\n@eggs{4} @bacon{200%g}"
+        category:
+          type: string
+          nullable: true
+          description: Optional category for organization
+          example: mains
+        author:
+          type: string
+          nullable: true
+          description: Optional author name for git commit
+          example: Chef Alice
+        comment:
+          type: string
+          nullable: true
+          description: Optional commit message
+          example: Added new recipe from cookbook
+
+    UpdateRecipeRequest:
+      type: object
+      description: Request to update a recipe (all fields optional)
+      properties:
+        name:
+          type: string
+          description: New recipe name
+          example: Updated Recipe Name
+        content:
+          type: string
+          description: New recipe content in CookLang format
+          example: "# Updated Recipe\n\n@ingredient{1%unit}"
+        category:
+          type: string
+          nullable: true
+          description: New category (use null to remove category)
+          example: new-category
+        author:
+          type: string
+          nullable: true
+          description: Optional author name for git commit
+          example: Chef Bob
+        comment:
+          type: string
+          nullable: true
+          description: Optional commit message
+          example: Updated ingredients and instructions
+
+    CategoryListResponse:
+      type: object
+      description: List of all categories
+      required:
+        - categories
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+          example:
+            - appetizers
+            - desserts
+            - mains
+            - sides
+
+    CategoryRecipesResponse:
+      type: object
+      description: Recipes in a specific category
+      required:
+        - category
+        - recipes
+        - count
+      properties:
+        category:
+          type: string
+          description: Category name
+          example: desserts
+        recipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeSummary'
+        count:
+          type: integer
+          description: Number of recipes in category
+          example: 5
+
+    StatusResponse:
+      type: object
+      description: Server status and statistics
+      required:
+        - status
+        - version
+        - recipe_count
+        - categories
+      properties:
+        status:
+          type: string
+          description: Server status
+          example: running
+        version:
+          type: string
+          description: API version
+          example: 0.1.0
+        recipe_count:
+          type: integer
+          description: Total number of recipes
+          example: 42
+        categories:
+          type: integer
+          description: Number of categories
+          example: 8
+
+    ErrorResponse:
+      type: object
+      description: Error response
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          example: validation_error
+        message:
+          type: string
+          description: Human-readable error message
+          example: Recipe name cannot be empty
+        details:
+          type: object
+          nullable: true
+          description: Optional additional error context
+          additionalProperties:
+            type: string
+          example:
+            field: Additional context
+
+    PaginationInfo:
+      type: object
+      description: Pagination metadata
+      required:
+        - limit
+        - offset
+        - total
+      properties:
+        limit:
+          type: integer
+          description: Items returned per page
+          example: 20
+        offset:
+          type: integer
+          description: Items skipped (starting position)
+          example: 0
+        total:
+          type: integer
+          description: Total items available
+          example: 42
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Status
+    description: Server status and statistics
+  - name: Recipes
+    description: Recipe CRUD operations and search
+  - name: Categories
+    description: Recipe category operations

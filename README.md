@@ -18,7 +18,7 @@ Learn more at [cooklang.org](https://cooklang.org)
 
 ## Project Status
 
-✅ **Phase 3 In Progress** - Docker setup & testing complete.
+✅ **Phase 3 Complete** - Testing, deployment, and documentation finished.
 
 **Phase 2 Complete**: Core recipe engine and REST API
 - Milestone 2.1: CookLang Parser Integration ✅
@@ -26,10 +26,10 @@ Learn more at [cooklang.org](https://cooklang.org)
 - Milestone 2.3: Git Integration Layer ✅
 - Milestone 2.4: Basic REST API ✅
 
-**Phase 3 In Progress**: Testing & Deployment
+**Phase 3 Complete**: Testing & Deployment
 - Milestone 3.1: Docker Setup & Local Testing ✅
-- Milestone 3.2: Bug Fixes & Stability (in progress)
-- Milestone 3.3: API Documentation & Testing Tools (planned)
+- Milestone 3.2: Comprehensive Integration Tests ✅
+- Milestone 3.3: API Documentation & Testing Tools ✅
 
 **Tech Stack**: Rust + Axum + In-Memory Cache (DashMap) + Git storage
 
@@ -143,6 +143,9 @@ See [docs/API.md](docs/API.md) for complete API documentation.
 ## Documentation
 
 - [docs/API.md](docs/API.md) - Full REST API documentation and examples
+- [docs/openapi.yaml](docs/openapi.yaml) - OpenAPI 3.0 specification (import into Swagger UI or other tools)
+- [docs/postman-collection.json](docs/postman-collection.json) - Postman collection for API testing
+- [docs/SAMPLE-RECIPES.md](docs/SAMPLE-RECIPES.md) - Sample recipes for testing API endpoints
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide (24 integration tests, Docker tests, CI/CD)
 - [docs/DOCKER-TESTING.md](docs/DOCKER-TESTING.md) - Docker testing guide (requires only Docker, no Rust)
 - [PROJECT_PLAN.md](PROJECT_PLAN.md) - Architecture decisions and development roadmap

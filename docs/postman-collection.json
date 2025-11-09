@@ -1,0 +1,233 @@
+{
+  "info": {
+    "_postman_id": "cooklang-backend-api",
+    "name": "CookLang Backend API",
+    "description": "Collection for testing CookLang Backend REST API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Simple health check endpoint"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Server Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "status"]
+            },
+            "description": "Returns server status, version, and recipe statistics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Recipes",
+      "item": [
+        {
+          "name": "Create Recipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('recipe_id', jsonData.recipe_id);",
+                  "    console.log('Recipe created with ID: ' + jsonData.recipe_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pasta Carbonara\",\n  \"content\": \"# Pasta Carbonara\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @bacon{200%g} in a #pan until crispy.\\nToss hot pasta with bacon and egg mixture.\\nTop with @parmesan{100%g}.\",\n  \"category\": \"mains\",\n  \"author\": \"Test User\",\n  \"comment\": \"Classic Italian pasta recipe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes"]
+            },
+            "description": "Create a new recipe"
+          },
+          "response": []
+        },
+        {
+          "name": "List Recipes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Get paginated list of all recipes"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Recipes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/search?q=pasta&limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "pasta"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Search recipes by name (case-insensitive substring match)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recipe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}"]
+            },
+            "description": "Get a single recipe by ID. Uses recipe_id from Create Recipe response."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Recipe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pasta Carbonara (Updated)\",\n  \"content\": \"# Pasta Carbonara - Updated\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @bacon{200%g} in a #pan until crispy.\\nToss hot pasta with bacon and egg mixture.\\nTop with @parmesan{100%g} and @black_pepper{to taste}.\",\n  \"author\": \"Test User\",\n  \"comment\": \"Updated with fresh black pepper\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}"]
+            },
+            "description": "Update an existing recipe"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Recipe",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}"]
+            },
+            "description": "Delete a recipe"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "categories"]
+            },
+            "description": "Get list of all recipe categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category Recipes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/categories/mains",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "categories", "mains"]
+            },
+            "description": "Get all recipes in a specific category. Update 'mains' with the desired category name."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "recipe_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

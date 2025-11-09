@@ -1,6 +1,6 @@
 # CookLang Backend - Project Plan
 
-**Status**: Phase 2 Complete, Phase 3 In Progress (Nov 8, 2025)
+**Status**: Phase 2 Complete, Phase 3 Complete (Nov 9, 2025)
 
 ## Completed: Phase 1 & 2 ✅
 
@@ -27,12 +27,13 @@ Phases 1 and 2 are complete. The foundational architecture and core recipe engin
 - ✅ Test coverage for CRUD operations, pagination, search, categories
 - ✅ Git file verification helpers
 
-#### Milestone 3.3: API Documentation & Testing Tools
-- [ ] Generate OpenAPI/Swagger specification
-- [ ] Create Postman collection for manual testing
-- [ ] Document all endpoints with examples
-- [ ] Create sample recipes for testing
-- [ ] Update README with quick start guide
+#### Milestone 3.3: API Documentation & Testing Tools ✅ (Completed Nov 9, 2025)
+- ✅ Generate OpenAPI/Swagger specification (docs/openapi.yaml)
+- ✅ Create Postman collection for manual testing (docs/postman-collection.json)
+- ✅ Document all endpoints with examples (docs/API.md verified complete)
+- ✅ Create sample recipes for testing (docs/SAMPLE-RECIPES.md with 5+ examples)
+- ✅ Update README with quick start guide and documentation references
+- ✅ Update AGENTS.md with API documentation maintenance guidelines for future agents
 
 ## Phase 4: Optimization & DevOps
 
