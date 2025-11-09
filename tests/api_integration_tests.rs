@@ -2,7 +2,6 @@ use cooklang_backend::{api, repository::RecipeRepository};
 use serde_json::Value;
 use std::sync::Arc;
 use std::fs;
-use std::path::Path;
 use tempfile::TempDir;
 use tower::util::ServiceExt;
 
@@ -97,7 +96,7 @@ fn read_recipe_file(temp_dir: &TempDir, recipe_name: &str, category: &str) -> St
 
 fn count_git_commits(temp_dir: &TempDir) -> usize {
     let repo = git2::Repository::open(temp_dir.path()).expect("Failed to open git repo");
-    let mut revwalk = repo.revwalk(git2::ObjectType::Commit.into()).unwrap();
+    let mut revwalk = repo.revwalk().unwrap();
     revwalk.push_head().unwrap();
     revwalk.count()
 }
@@ -215,15 +214,15 @@ async fn test_create_recipe() {
 }
 
 #[tokio::test]
-async fn test_create_recipe_with_description() {
+async fn test_create_recipe_with_comment() {
     let (build_router, _temp_dir) = setup_api().await;
     let app = build_router();
 
     let payload = serde_json::json!({
         "name": "Chocolate Cake",
-        "description": "A delicious chocolate cake",
         "content": "# Chocolate Cake\n\n@flour{2%cup}",
-        "category": "desserts"
+        "category": "desserts",
+        "comment": "Classic chocolate recipe"
     });
 
     let response = app
@@ -236,7 +235,8 @@ async fn test_create_recipe_with_description() {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["description"], "A delicious chocolate cake");
+    assert_eq!(json["name"], "Chocolate Cake");
+    assert_eq!(json["category"], "desserts");
 }
 
 #[tokio::test]

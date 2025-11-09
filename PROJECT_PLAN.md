@@ -85,6 +85,10 @@ Phases 1 and 2 are complete. The foundational architecture and core recipe engin
 
 ## Technical Debt & Ongoing Tasks
 
+- [ ] **DESIGN MISMATCH - Category Structure**: Current implementation treats categories as flat (single-level) - only the first subdirectory under `recipes/` is extracted as the category. A path like `recipes/meals/meat/traditional/chicken-biryani.cook` has category="meals", ignoring "meat/traditional". Need to decide:
+  - Should categories support hierarchical nesting (e.g., "meals > meat > traditional")?
+  - Or should the API structure restrict to `recipes/{category}/{slug}.cook` only?
+  - Update implementation and documentation once decided
 - [ ] Maintain >80% test coverage
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning

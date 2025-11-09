@@ -55,7 +55,7 @@ Located in `tests/api_integration_tests.rs`
 
 #### Recipe Creation (5 tests)
 - `test_create_recipe` - Create a recipe and verify response
-- `test_create_recipe_with_description` - Create recipe with optional description field
+- `test_create_recipe_with_comment` - Create recipe with optional comment field for git commit message
 - `test_create_recipe_empty_name` - Validation: empty name returns 400
 - `test_create_recipe_empty_category` - Validation: empty category returns 400
 - `test_create_recipe_empty_content` - Validation: empty content returns 400
