@@ -2,14 +2,7 @@
 
 **Status**: Phase 4 Complete, Phase 5 in Progress (Nov 9, 2025)
 
-## Completed: Phase 1, 2, 3 & 4 ✅
-
-**Phase 1**: Core architecture and recipe parsing  
-**Phase 2**: Git-backed storage and REST API with full CRUD operations  
-**Phase 3**: Testing infrastructure, Docker deployment, and comprehensive API documentation  
-**Phase 4**: CI/CD & Testing Integration
-
-Complete implementation:
+## Completed Implementation ✅
 - Git repository as source of truth for recipe storage
 - In-memory cache (DashMap) for fast search and browsing
 - Rust with official `cooklang-rs` parser
@@ -38,14 +31,6 @@ Complete implementation:
 #### Milestone 5.3: Filter by Categories
 - Filter recipes by category
 - Category listing with filtering
-
-## Completed Deferred Features ✅
-
-### Storage Flexibility (Completed)
-- Support persisting recipes directly to disk without git
-- Git storage backend with automatic commits
-- Pluggable RecipeStorage trait allows easy addition of new backends
-- Default to disk (simpler), git available when needed via COOKLANG_STORAGE_TYPE env var
 
 ## Deferred Features
 

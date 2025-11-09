@@ -215,14 +215,14 @@ Failure to update all three files will cause documentation drift and confusion f
   - Change installation or setup steps
 
 - **PROJECT_PLAN.md**: Update whenever you:
-  - Complete a milestone (mark as done with date)
-  - Complete a phase (clean up implementation details, keep only high-level summary)
-  - Make architectural decisions
-  - Add or remove planned features
-  - Identify new technical debt
-  - Change project priorities or timeline
-  
-  **IMPORTANT - Keep Context Lean**: When marking a phase as complete, remove detailed implementation information (design rationale, detailed structures, code examples, etc.). Replace with a brief bullet-point summary of what was accomplished. This prevents context bloat for future AI agents. See the "Completed: Phase 1 & 2" section as a reference example.
+- Complete a milestone (mark as done with date)
+- Complete a phase (consolidate into high-level summary without phase naming)
+- Make architectural decisions
+- Add or remove planned features
+- Identify new technical debt
+- Change project priorities or timeline
+
+**IMPORTANT - Keep Context Lean**: When completing significant work, consolidate implementation details into a brief bullet-point summary. Avoid explicitly naming phases or detailed design rationale. Keep only what's essential for future agents to understand current state. This prevents context bloat.
 
 - **docs/TESTING.md**: Update whenever you:
   - Add new test cases or test patterns
