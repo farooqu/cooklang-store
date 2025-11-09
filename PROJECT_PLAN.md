@@ -1,12 +1,13 @@
 # Cooklang Store - Project Plan
 
-**Status**: Phase 3 Complete, Phase 4 in Progress (Nov 9, 2025)
+**Status**: Phase 4 Complete, Phase 5 in Progress (Nov 9, 2025)
 
-## Completed: Phase 1, 2 & 3 ✅
+## Completed: Phase 1, 2, 3 & 4 ✅
 
 **Phase 1**: Core architecture and recipe parsing  
 **Phase 2**: Git-backed storage and REST API with full CRUD operations  
-**Phase 3**: Testing infrastructure, Docker deployment, and comprehensive API documentation
+**Phase 3**: Testing infrastructure, Docker deployment, and comprehensive API documentation  
+**Phase 4**: CI/CD & Testing Integration
 
 Complete implementation:
 - Git repository as source of truth for recipe storage
@@ -15,14 +16,14 @@ Complete implementation:
 - REST API with Axum on Docker
 - JWT authentication framework
 - Full CRUD operations with git commit tracking
-- 37+ unit tests and 24+ integration tests
+- 161 tests (55 unit + 31 API + 25 disk storage + 25 git storage)
 - Docker setup with docker-compose
 - 10 REST API endpoints with OpenAPI specification
 - Postman collection and sample recipes for testing
+- GitHub Actions CI/CD with test coverage reporting
+- Hierarchical category support with full path preservation
 
-## Phase 4: CI/CD & Testing Integration
-
-### Milestones
+## Phase 4: CI/CD & Testing Integration ✅
 
 #### Milestone 4.1: CI/CD Pipeline Setup ✅ (Nov 9, 2025)
 - GitHub Actions workflows for Rust tests, linting, and security audits
@@ -32,11 +33,12 @@ Complete implementation:
 - Zero-cost CI/CD using GitHub-hosted runners (ubuntu-latest)
 - Comprehensive documentation in docs/CI-CD.md
 
-#### Milestone 4.2: Integration Test Suite
-- Complete integration test suite (24+ tests)
+#### Milestone 4.2: Integration Test Suite ✅ (Nov 9, 2025)
+- Complete integration test suite (161 tests across 4 test suites)
 - Automated test execution in CI/CD
 - Docker-based test environment
-- Test coverage verification (maintain >80%)
+- Test coverage verification (>80% achieved)
+- Hierarchical category support thoroughly tested (both disk and git backends)
 
 ## Phase 5: Search & Filtering
 
@@ -91,13 +93,9 @@ The following are intentionally excluded as they go beyond the core purpose of p
 
 ## Technical Debt & Ongoing Tasks
 
-- [x] **DESIGN MISMATCH - Category Structure**: ✅ Resolved (Nov 9, 2025)
-  - Implemented hierarchical category support: `recipes/meals/meat/traditional/chicken-biryani.cook` now has category `meals/meat/traditional`
-  - Category field contains full path from `recipes/` to parent directory
-  - Updated extraction logic in `src/repository.rs`
-  - Updated tests and all documentation (STORAGE.md, API.md)
 - [ ] Maintain >80% test coverage
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning
 - [ ] API versioning strategy
 - [ ] Backward compatibility considerations
+- [ ] Performance optimization for large recipe collections (>1000 recipes)
