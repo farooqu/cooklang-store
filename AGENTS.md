@@ -179,7 +179,18 @@ milestones/
 
 **Cleanup Rules** (must happen together in same commit):
 1. When a phase is **100% complete**:
-   - Update `milestone.md` to mark phase as ✅ COMPLETE and add completion summary
+   - In `milestone.md`: Replace the detailed task list with a brief completion summary
+   - Remove all `### Task X.Y:` sections and checklist items for that phase
+   - Keep only: Phase heading with ✅ COMPLETE, **Completed** date, and bullet-point summary of key accomplishments
+   - Example:
+     ```markdown
+     ## Phase 1: API Specification ✅ COMPLETE
+     
+     **Completed** (Nov 9, 2025):
+     - Updated OpenAPI spec with new schemas
+     - Added fallback lookup endpoints
+     - Updated API.md documentation
+     ```
    - Delete the phase checklist file from `phases/` directory
    - Commit both changes together:
    ```bash
