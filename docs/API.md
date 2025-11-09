@@ -4,6 +4,8 @@
 
 The Cooklang Store API provides RESTful endpoints for managing recipes stored in a git repository. All recipes are stored as `.cook` files and tracked in git for version history and collaboration.
 
+**Key Design**: Recipe names (titles) are derived from Cooklang YAML front matter metadata, not provided by the client. File names on disk are automatically generated from recipe titles and kept in sync.
+
 ## API Version
 
 - **Current Version**: v1
@@ -11,16 +13,41 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 
 ## Common Response Format
 
-### Success Response (2xx)
+### RecipeResponse (Full Recipe)
+Used when retrieving individual recipes or after create/update operations.
+
 ```json
 {
-  "recipe_id": "a1b2c3d4e5f6",
-  "name": "Chocolate Cake",
+  "recipeId": "a1b2c3d4e5f6",
+  "recipeName": "Chocolate Cake",
+  "path": "desserts",
+  "fileName": "chocolate-cake.cook",
   "description": null,
-  "category": "desserts",
-  "content": "# Recipe content..."
+  "content": "---\ntitle: Chocolate Cake\n---\n\n# Recipe content..."
 }
 ```
+
+**Notes**:
+- `recipeName` is derived from the `title` field in YAML front matter
+- `fileName` is generated from the recipe name (lowercase, spaces→hyphens, `.cook` extension)
+- `path` represents the directory location (relative to data-dir, no `recipes/` prefix)
+- `description` is omitted from JSON if null (using `skip_serializing_if`)
+- `content` always includes YAML front matter with title
+
+### RecipeSummary (Compact Recipe)
+Used in list and search endpoints.
+
+```json
+{
+  "recipeId": "a1b2c3d4e5f6",
+  "recipeName": "Chocolate Cake",
+  "path": "desserts"
+}
+```
+
+**Notes**:
+- No `fileName` or `content` in summaries
+- `path` omitted from JSON if null
 
 ### Error Response (4xx, 5xx)
 ```json
@@ -32,6 +59,30 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
   }
 }
 ```
+
+## Recipe Format: YAML Front Matter
+
+All recipe content must include YAML front matter with a `title` field at the start:
+
+```cook
+---
+title: Chocolate Cake
+---
+
+# Instructions
+
+@flour{2%cups}
+@sugar{1%cup}
+```
+
+**Format**:
+- Delimited by `---` on its own lines (start and end)
+- Must contain at least `title: Recipe Name`
+- Can include additional metadata fields
+
+**Validation**:
+- Create and update operations validate that content includes YAML front matter with `title` field
+- Missing title → 400 Bad Request
 
 ## Endpoints
 
@@ -67,28 +118,32 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Request Body**:
   ```json
   {
-    "name": "Chocolate Cake",
-    "content": "# Chocolate Cake\n\n@flour{2%cups}...",
-    "category": "desserts",
+    "content": "---\ntitle: Chocolate Cake\n---\n\n@flour{2%cups}...",
+    "path": "desserts",
     "author": "Alice",
     "comment": "Classic recipe from grandma"
   }
   ```
+  - `content` (required): Recipe in Cooklang format, must include YAML front matter with `title`
+  - `path` (optional): Directory path for organization (defaults to root if omitted)
+  - `author` (optional): Author name for git commit
+  - `comment` (optional): Commit message
 - **Response**:
   ```json
   {
-    "recipe_id": "a1b2c3d4e5f6",
-    "name": "Chocolate Cake",
+    "recipeId": "a1b2c3d4e5f6",
+    "recipeName": "Chocolate Cake",
+    "path": "desserts",
+    "fileName": "chocolate-cake.cook",
     "description": null,
-    "category": "desserts",
-    "content": "# Chocolate Cake\n\n@flour{2%cups}..."
+    "content": "---\ntitle: Chocolate Cake\n---\n\n@flour{2%cups}..."
   }
   ```
 - **Status Code**: `201 Created`
 - **Validation**:
-  - `name` is required and cannot be empty
   - `content` is required and cannot be empty
-  - Must be valid Cooklang format
+  - `content` must include valid YAML front matter with `title` field
+  - Missing title → 400 Bad Request
 
 #### List Recipes
 - **URL**: `/api/v1/recipes`
@@ -101,10 +156,9 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
   {
     "recipes": [
       {
-        "recipe_id": "a1b2c3d4e5f6",
-        "name": "Chocolate Cake",
-        "description": null,
-        "category": "desserts"
+        "recipeId": "a1b2c3d4e5f6",
+        "recipeName": "Chocolate Cake",
+        "path": "desserts"
       }
     ],
     "pagination": {
@@ -123,7 +177,7 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
   - `q` (required): Search query (case-insensitive substring match on recipe name)
   - `limit` (optional): Items per page (default: 20, max: 100)
   - `offset` (optional): Items to skip (default: 0)
-- **Response**: Same as List Recipes
+- **Response**: Same as List Recipes (array of RecipeSummary)
 - **Status Code**: `200 OK`
 - **Validation**:
   - `q` cannot be empty
@@ -133,16 +187,7 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Method**: `GET`
 - **Path Parameters**:
   - `recipe_id` (required): Unique recipe identifier (12-character hex string)
-- **Response**:
-  ```json
-  {
-    "recipe_id": "a1b2c3d4e5f6",
-    "name": "Chocolate Cake",
-    "description": null,
-    "category": "desserts",
-    "content": "# Chocolate Cake\n\n@flour{2%cups}..."
-  }
-  ```
+- **Response**: Full RecipeResponse with all fields and content
 - **Status Code**: `200 OK`
 - **Error Codes**:
   - `404 Not Found`: Recipe not found
@@ -153,21 +198,25 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Content-Type**: `application/json`
 - **Path Parameters**:
   - `recipe_id` (required): Unique recipe identifier
-- **Request Body** (all fields optional):
+- **Request Body** (at least one field required):
   ```json
   {
-    "name": "New Name",
-    "content": "Updated content...",
-    "category": "new-category",
+    "content": "---\ntitle: Dark Chocolate Cake\n---\n\n...",
+    "path": "desserts",
     "author": "Bob",
     "comment": "Updated ingredients"
   }
   ```
-- **Response**: Full updated recipe
+  - `content` (optional): New recipe content. If provided, must include YAML front matter with `title` field
+  - `path` (optional): New directory path. If provided, recipe is moved to this location
+  - `author` (optional): Author name for git commit
+  - `comment` (optional): Commit message
+- **Response**: Full updated RecipeResponse
 - **Status Code**: `200 OK`
+- **File Renaming**: If recipe content is updated and the title changes, the file on disk is automatically renamed to match the new recipe name
 - **Error Codes**:
   - `404 Not Found`: Recipe not found
-  - `400 Bad Request`: Invalid content or validation failed
+  - `400 Bad Request`: No fields provided, or content provided but missing YAML front matter with title
 
 #### Delete Recipe
 - **URL**: `/api/v1/recipes/{recipe_id}`
@@ -178,6 +227,57 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Status Code**: `204 No Content`
 - **Error Codes**:
   - `404 Not Found`: Recipe not found
+
+### Fallback Lookup Endpoints
+
+These endpoints help clients find recipes when recipe IDs change due to rename operations.
+
+#### Find Recipes by Name
+- **URL**: `/api/v1/recipes/find-by-name`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `q` (required): Recipe name search term (case-insensitive substring match)
+  - `limit` (optional): Items per page (default: 20, max: 100)
+  - `offset` (optional): Items to skip (default: 0)
+- **Description**: Search for recipes by name. Use this when a recipe ID has changed due to a rename.
+- **Response**: Array of RecipeSummary
+  ```json
+  {
+    "recipes": [
+      {
+        "recipeId": "a1b2c3d4e5f6",
+        "recipeName": "Chocolate Cake",
+        "path": "desserts"
+      }
+    ],
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "total": 1
+    }
+  }
+  ```
+- **Status Code**: `200 OK` (returns empty array if no matches, not 404)
+
+#### Find Recipe by Path
+- **URL**: `/api/v1/recipes/find-by-path`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `path` (required): Recipe directory path (relative to data-dir, no `recipes/` prefix)
+- **Description**: Find a recipe at a specific path. Use this when you know the location but not the recipe ID.
+- **Response**: Single RecipeSummary (wrapped in object)
+  ```json
+  {
+    "recipe": {
+      "recipeId": "a1b2c3d4e5f6",
+      "recipeName": "Chocolate Cake",
+      "path": "desserts"
+    }
+  }
+  ```
+- **Status Code**: `200 OK`
+- **Error Codes**:
+  - `404 Not Found`: Recipe at that path not found
 
 ### Categories
 
@@ -199,7 +299,7 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
   - `name` (required): Category name (supports hierarchical paths with `/` separators)
 - **Description**: Categories can be hierarchical, reflecting the directory structure. Use URL encoding for `/` as `%2F`.
 - **Examples**:
-  - `/api/v1/categories/desserts` - Get all recipes in the `desserts` category
+  - `/api/v1/categories/desserts` - Get all recipes in the `desserts` directory
   - `/api/v1/categories/meals%2Fmeat%2Ftraditional` - Get all recipes in `meals/meat/traditional`
 - **Response**:
   ```json
@@ -208,10 +308,9 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
     "count": 12,
     "recipes": [
       {
-        "recipe_id": "a1b2c3d4e5f6",
-        "name": "Chocolate Cake",
-        "description": null,
-        "category": "desserts"
+        "recipeId": "a1b2c3d4e5f6",
+        "recipeName": "Chocolate Cake",
+        "path": "desserts"
       }
     ]
   }
@@ -220,24 +319,35 @@ The Cooklang Store API provides RESTful endpoints for managing recipes stored in
 - **Error Codes**:
   - `404 Not Found`: Category not found
 
-## Categories
+## Recipe ID Stability
 
-Categories reflect the directory structure on disk and support hierarchical nesting:
+**Important**: Recipe IDs are derived from the recipe's file path (git_path) using a SHA256 hash. When a recipe is renamed (due to title change), its ID will change.
 
-- **Single-level**: `recipes/desserts/chocolate-cake.cook` → category: `desserts`
-- **Hierarchical**: `recipes/meals/meat/traditional/chicken-biryani.cook` → category: `meals/meat/traditional`
-- **Root-level**: `recipes/simple-recipe.cook` → no category (optional field is null)
+### Behavior
+- IDs are **stable across content edits** (same file = same path = same ID)
+- IDs **change on rename** (title change triggers automatic file rename on disk)
+- IDs are deterministic (same path always produces same ID)
 
-When creating or updating recipes, provide the category as a single string. If nesting is needed, use forward slashes (`/`) as directory separators.
+### Client Handling
+If a bookmarked recipe ID returns 404:
+1. Use `GET /api/v1/recipes/find-by-name?q=recipe-name` to search by name
+2. Use `GET /api/v1/recipes/find-by-path?path=category/name` if you know the path
+3. Clients should not rely on recipe IDs as permanent identifiers
 
-## Recipe ID Format
+## File Name Generation
 
-Recipe IDs are deterministic 12-character hexadecimal strings generated from the SHA256 hash of the recipe's git path. This allows:
-- Consistent IDs for the same recipe
-- Client-side ID generation if the git path is known
-- URL-friendly format (alphanumeric only)
+File names are automatically generated from recipe titles using these rules:
+- Convert to lowercase
+- Replace spaces with hyphens
+- Remove special characters (keep only alphanumeric and hyphens)
+- Append `.cook` extension
 
-Example: `a1b2c3d4e5f6`
+Examples:
+- "Chocolate Cake" → `chocolate-cake.cook`
+- "Pasta Carbonara (Italian)" → `pasta-carbonara-italian.cook`
+- "Sweet & Sour" → `sweet-sour.cook`
+
+File names are kept synchronized with recipe titles. When you update a recipe's title, its file name is automatically updated on disk.
 
 ## Pagination
 
@@ -281,11 +391,21 @@ The API has CORS enabled with permissive policy to allow requests from any origi
 curl -X POST http://localhost:3000/api/v1/recipes \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Pasta Carbonara",
-    "content": "# Pasta Carbonara\n\n@eggs{4} @bacon{200%g} @pasta{400%g}",
-    "category": "mains",
+    "content": "---\ntitle: Pasta Carbonara\n---\n\n# Instructions\n\n@eggs{4} @bacon{200%g} @pasta{400%g}",
+    "path": "mains",
     "author": "Chef Alice"
   }'
+```
+
+Response (201 Created):
+```json
+{
+  "recipeId": "a1b2c3d4e5f6",
+  "recipeName": "Pasta Carbonara",
+  "path": "mains",
+  "fileName": "pasta-carbonara.cook",
+  "content": "---\ntitle: Pasta Carbonara\n---\n\n# Instructions\n\n@eggs{4} @bacon{200%g} @pasta{400%g}"
+}
 ```
 
 ### Search for Recipes
@@ -293,9 +413,49 @@ curl -X POST http://localhost:3000/api/v1/recipes \
 curl "http://localhost:3000/api/v1/recipes/search?q=chocolate&limit=10"
 ```
 
+Response (200 OK):
+```json
+{
+  "recipes": [
+    {
+      "recipeId": "a1b2c3d4e5f6",
+      "recipeName": "Chocolate Cake",
+      "path": "desserts"
+    }
+  ],
+  "pagination": {
+    "limit": 10,
+    "offset": 0,
+    "total": 1
+  }
+}
+```
+
 ### Get a Specific Recipe
 ```bash
 curl http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6
+```
+
+### Update Recipe (Change Title)
+```bash
+curl -X PUT http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "---\ntitle: Dark Chocolate Cake\n---\n\n# New instructions..."
+  }'
+```
+
+Note: Recipe file on disk will be renamed from `chocolate-cake.cook` to `dark-chocolate-cake.cook`.
+
+### Find Recipe by Name (After Rename)
+If the recipe ID has changed due to a rename:
+```bash
+curl "http://localhost:3000/api/v1/recipes/find-by-name?q=Dark%20Chocolate"
+```
+
+### Find Recipe by Path
+```bash
+curl "http://localhost:3000/api/v1/recipes/find-by-path?path=desserts"
 ```
 
 ### List Categories
@@ -303,13 +463,18 @@ curl http://localhost:3000/api/v1/recipes/a1b2c3d4e5f6
 curl http://localhost:3000/api/v1/categories
 ```
 
+### Get Recipes in a Category
+```bash
+curl http://localhost:3000/api/v1/categories/mains
+```
+
 ## Authentication
 
-Currently, the API does not require authentication. This is planned for Phase 4 (User Management).
+Currently, the API does not require authentication. This is planned for a future phase.
 
 ## Rate Limiting
 
-Rate limiting is not currently implemented. This is planned for Phase 6 (Production Readiness).
+Rate limiting is not currently implemented. This is planned for a future phase.
 
 ## Versioning
 

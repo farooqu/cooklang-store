@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "cooklang-store-api",
     "name": "Cooklang Store API",
-    "description": "Collection for testing Cooklang Store REST API endpoints",
+    "description": "Collection for testing Cooklang Store REST API endpoints. Recipe names are derived from Cooklang YAML front matter metadata.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -51,8 +51,8 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.environment.set('recipe_id', jsonData.recipe_id);",
-                  "    console.log('Recipe created with ID: ' + jsonData.recipe_id);",
+                  "    pm.environment.set('recipe_id', jsonData.recipeId);",
+                  "    console.log('Recipe created with ID: ' + jsonData.recipeId);",
                   "}"
                 ]
               }
@@ -68,14 +68,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Pasta Carbonara\",\n  \"content\": \"# Pasta Carbonara\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @bacon{200%g} in a #pan until crispy.\\nToss hot pasta with bacon and egg mixture.\\nTop with @parmesan{100%g}.\",\n  \"category\": \"mains\",\n  \"author\": \"Test User\",\n  \"comment\": \"Classic Italian pasta recipe\"\n}"
+              "raw": "{\n  \"content\": \"---\\ntitle: Pasta Carbonara\\n---\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @bacon{200%g} in a #pan until crispy.\\nToss hot pasta with bacon and egg mixture.\\nTop with @parmesan{100%g}.\",\n  \"path\": \"mains\",\n  \"author\": \"Test User\",\n  \"comment\": \"Classic Italian pasta recipe\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/recipes",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "recipes"]
             },
-            "description": "Create a new recipe"
+            "description": "Create a new recipe. Content must include YAML front matter with title field."
           },
           "response": []
         },
@@ -99,7 +99,7 @@
                 }
               ]
             },
-            "description": "Get paginated list of all recipes"
+            "description": "Get paginated list of all recipes (returns RecipeSummary format)"
           },
           "response": []
         },
@@ -132,6 +132,46 @@
           "response": []
         },
         {
+          "name": "Find by Name (Fallback)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/find-by-name?q=carbonara",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "find-by-name"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "carbonara"
+                }
+              ]
+            },
+            "description": "Find recipes by name. Use this when recipe ID has changed due to rename."
+          },
+          "response": []
+        },
+        {
+          "name": "Find by Path (Fallback)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/find-by-path?path=mains",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "find-by-path"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "mains"
+                }
+              ]
+            },
+            "description": "Find recipe at a specific path. Use this when you know location but not recipe ID."
+          },
+          "response": []
+        },
+        {
           "name": "Get Recipe",
           "request": {
             "method": "GET",
@@ -141,12 +181,12 @@
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "recipes", "{{recipe_id}}"]
             },
-            "description": "Get a single recipe by ID. Uses recipe_id from Create Recipe response."
+            "description": "Get a single recipe by ID (returns full RecipeResponse with content)"
           },
           "response": []
         },
         {
-          "name": "Update Recipe",
+          "name": "Update Recipe - Change Content",
           "request": {
             "method": "PUT",
             "header": [
@@ -157,14 +197,37 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Pasta Carbonara (Updated)\",\n  \"content\": \"# Pasta Carbonara - Updated\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @bacon{200%g} in a #pan until crispy.\\nToss hot pasta with bacon and egg mixture.\\nTop with @parmesan{100%g} and @black_pepper{to taste}.\",\n  \"author\": \"Test User\",\n  \"comment\": \"Updated with fresh black pepper\"\n}"
+              "raw": "{\n  \"content\": \"---\\ntitle: Pasta Carbonara (Premium)\\n---\\n\\nServe 4 people\\n\\nAdd @eggs{4} to a bowl and whisk.\\nCook @pasta{400%g} in @water{4%liters} with @salt{to taste} until al dente ~{8-10%minutes}.\\nFry @guanciale{200%g} (premium bacon) in a #pan until crispy.\\nToss hot pasta with guanciale and egg mixture.\\nTop with @pecorino{100%g} and @black_pepper{to taste}.\",\n  \"author\": \"Test User\",\n  \"comment\": \"Updated with premium ingredients\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "recipes", "{{recipe_id}}"]
             },
-            "description": "Update an existing recipe"
+            "description": "Update recipe content. Note: If title changes, file will be automatically renamed."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Recipe - Change Path",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"italian/pasta\",\n  \"author\": \"Test User\",\n  \"comment\": \"Moved to italian/pasta category\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "recipes", "{{recipe_id}}"]
+            },
+            "description": "Move recipe to a different path"
           },
           "response": []
         },

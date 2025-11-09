@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Cooklang Store API
-  description: RESTful API for managing Cooklang recipes stored in git
+  description: RESTful API for managing Cooklang recipes stored in git. Recipe names are derived from Cooklang YAML front matter metadata. Recipe IDs are path-based (12-character hex) and will change if a recipe is renamed; use fallback lookup endpoints as needed.
   version: 0.1.0
   contact:
     name: Cooklang Store
@@ -50,7 +50,10 @@ paths:
   /api/v1/recipes:
     post:
       summary: Create a new recipe
-      description: Create and store a new recipe in the git repository
+      description: |
+        Create and store a new recipe in the git repository.
+        Content must include YAML front matter with `title` field.
+        Recipe name is derived from the title metadata, not provided in request.
       tags:
         - Recipes
       operationId: createRecipe
@@ -68,7 +71,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecipeResponse'
         '400':
-          description: Invalid input or validation failed
+          description: Invalid input or validation failed (e.g., missing YAML front matter with title)
           content:
             application/json:
               schema:
@@ -153,6 +156,81 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/recipes/find-by-name:
+    get:
+      summary: Find recipes by name
+      description: |
+        Fallback endpoint to find recipes by name when recipe ID is unknown.
+        Use this when a recipe ID has changed due to a rename operation.
+      tags:
+        - Recipes
+      operationId: findRecipesByName
+      parameters:
+        - name: q
+          in: query
+          description: Recipe name search term (case-insensitive)
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of items per page (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of items to skip (for pagination)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Matching recipes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        '400':
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/recipes/find-by-path:
+    get:
+      summary: Find recipe by path
+      description: |
+        Fallback endpoint to find a recipe by its path when recipe ID is unknown.
+        Use this when a recipe ID has changed due to a rename operation.
+      tags:
+        - Recipes
+      operationId: findRecipeByPath
+      parameters:
+        - name: path
+          in: query
+          description: Recipe path (directory location, relative to data-dir, without 'recipes/' prefix)
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recipe found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeSummaryResponse'
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/recipes/{recipe_id}:
     get:
       summary: Get a recipe
@@ -184,7 +262,10 @@ paths:
 
     put:
       summary: Update a recipe
-      description: Update an existing recipe (all fields optional)
+      description: |
+        Update an existing recipe.
+        At least one of `content` or `path` must be provided.
+        If content is provided, it must include YAML front matter with `title` field.
       tags:
         - Recipes
       operationId: updateRecipe
@@ -295,57 +376,67 @@ components:
       type: object
       description: Full recipe with content
       required:
-        - recipe_id
-        - name
+        - recipeId
+        - recipeName
+        - fileName
         - content
       properties:
-        recipe_id:
+        recipeId:
           type: string
           description: Unique recipe identifier (12-character hex)
           example: a1b2c3d4e5f6
-        name:
+        recipeName:
           type: string
-          description: Recipe name
+          description: Recipe name (derived from YAML front matter title field)
           example: Chocolate Cake
+        path:
+          type: string
+          nullable: true
+          description: Directory path where recipe is stored (relative to data-dir, no recipes/ prefix)
+          example: desserts
+        fileName:
+          type: string
+          description: File name (generated from recipe name)
+          example: chocolate-cake.cook
         description:
           type: string
           nullable: true
           description: Optional recipe description
           example: A classic chocolate cake recipe
-        category:
-          type: string
-          nullable: true
-          description: Recipe category
-          example: desserts
         content:
           type: string
-          description: Full recipe content in Cooklang format
-          example: "# Chocolate Cake\n\n@flour{2%cups} @sugar{1%cup}"
+          description: Full recipe content in Cooklang format (including YAML front matter)
+          example: "---\ntitle: Chocolate Cake\n---\n\n# Instructions\n@flour{2%cups}"
 
     RecipeSummary:
       type: object
-      description: Recipe summary (without full content)
+      description: Recipe summary (for lists and searches)
       required:
-        - recipe_id
-        - name
+        - recipeId
+        - recipeName
       properties:
-        recipe_id:
+        recipeId:
           type: string
           description: Unique recipe identifier
           example: a1b2c3d4e5f6
-        name:
+        recipeName:
           type: string
-          description: Recipe name
+          description: Recipe name (derived from YAML front matter title field)
           example: Chocolate Cake
-        description:
+        path:
           type: string
           nullable: true
-          description: Optional recipe description
-        category:
-          type: string
-          nullable: true
-          description: Recipe category
+          description: Directory path where recipe is stored
           example: desserts
+
+    RecipeSummaryResponse:
+      type: object
+      description: Single recipe summary response
+      required:
+        - recipe
+      properties:
+        recipe:
+          $ref: '#/components/schemas/RecipeSummary'
 
     RecipeListResponse:
       type: object
@@ -365,22 +456,21 @@ components:
       type: object
       description: Request to create a new recipe
       required:
-        - name
         - content
       properties:
-        name:
-          type: string
-          description: Recipe name (required, non-empty)
-          example: Pasta Carbonara
         content:
           type: string
-          description: Recipe content in Cooklang format (required, non-empty)
-          example: "# Pasta Carbonara\n\n@eggs{4} @bacon{200%g}"
-        category:
+          description: |
+            Recipe content in Cooklang format (required, non-empty).
+            Must include YAML front matter with `title` field (first element).
+          example: "---\ntitle: Chocolate Cake\n---\n\n# Instructions\n@flour{2%cups}"
+        path:
           type: string
           nullable: true
-          description: Optional category for organization
-          example: mains
+          description: |
+            Optional directory path for organization (relative to data-dir, no recipes/ prefix).
+            If omitted, recipe is stored at root level.
+          example: desserts
         author:
           type: string
           nullable: true
@@ -394,21 +484,24 @@ components:
 
     UpdateRecipeRequest:
       type: object
-      description: Request to update a recipe (all fields optional)
+      description: |
+        Request to update a recipe.
+        At least one of `content` or `path` must be provided.
       properties:
-        name:
-          type: string
-          description: New recipe name
-          example: Updated Recipe Name
         content:
           type: string
-          description: New recipe content in Cooklang format
-          example: "# Updated Recipe\n\n@ingredient{1%unit}"
-        category:
+          nullable: true
+          description: |
+            New recipe content in Cooklang format.
+            If provided, must include YAML front matter with `title` field.
+          example: "---\ntitle: Dark Chocolate Cake\n---\n\n# Updated Recipe"
+        path:
           type: string
           nullable: true
-          description: New category (use null to remove category)
-          example: new-category
+          description: |
+            New directory path for the recipe.
+            If provided, recipe is moved to this location.
+          example: desserts
         author:
           type: string
           nullable: true
@@ -534,6 +627,6 @@ tags:
   - name: Status
     description: Server status and statistics
   - name: Recipes
-    description: Recipe CRUD operations and search
+    description: Recipe CRUD operations, search, and fallback lookup
   - name: Categories
     description: Recipe category operations
