@@ -25,16 +25,14 @@ fn make_request(
 ) -> axum::http::Request<axum::body::Body> {
     let mut builder = axum::http::Request::builder().method(method).uri(uri);
 
-    let request = if let Some(json_body) = body {
+    if let Some(json_body) = body {
         builder = builder.header("content-type", "application/json");
         builder
             .body(axum::body::Body::from(json_body.to_string()))
             .unwrap()
     } else {
         builder.body(axum::body::Body::empty()).unwrap()
-    };
-
-    request
+    }
 }
 
 async fn extract_response_body(response: axum::http::Response<axum::body::Body>) -> String {
@@ -151,6 +149,7 @@ fn read_recipe_file_at_root(temp_dir: &TempDir, recipe_name: &str) -> String {
     fs::read_to_string(&path).expect("Failed to read recipe file at root")
 }
 
+#[allow(dead_code)]
 fn count_git_commits(temp_dir: &TempDir) -> usize {
     let repo = git2::Repository::open(temp_dir.path()).expect("Failed to open git repo");
     let mut revwalk = repo.revwalk().unwrap();
@@ -664,7 +663,7 @@ async fn test_list_categories() {
     let app1 = build_router();
 
     // Create recipes in different categories
-    let categories = vec!["desserts", "main", "appetizers"];
+    let categories = ["desserts", "main", "appetizers"];
     for (i, category) in categories.iter().enumerate() {
         let payload = serde_json::json!({
             "name": format!("Recipe {}", i),

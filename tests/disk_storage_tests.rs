@@ -473,7 +473,7 @@ async fn test_list_categories() {
     let app1 = build_router();
 
     // Create recipes in different categories
-    let categories = vec!["desserts", "main", "appetizers"];
+    let categories = ["desserts", "main", "appetizers"];
     for (i, category) in categories.iter().enumerate() {
         let payload = serde_json::json!({
             "name": format!("Recipe {}", i),

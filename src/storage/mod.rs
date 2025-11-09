@@ -29,7 +29,7 @@ pub async fn create_storage(
 ) -> Result<Box<dyn RecipeStorage>> {
     match storage_type {
         "git" => Ok(Box::new(GitStorage::new(repo_path)?)),
-        "disk" | _ => Ok(Box::new(DiskStorage::new(repo_path)?)),
+        _ => Ok(Box::new(DiskStorage::new(repo_path)?)),
     }
 }
 
