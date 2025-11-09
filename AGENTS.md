@@ -177,17 +177,29 @@ milestones/
 - [ ] Subtask 3 (if in progress)
 ```
 
-**Cleanup Rules**:
-1. When a phase is **100% complete**: In the same commit that marks it complete, delete the phase file from `phases/` directory
+**Cleanup Rules** (must happen together in same commit):
+1. When a phase is **100% complete**:
+   - Update `milestone.md` to mark phase as ✅ COMPLETE and add completion summary
+   - Delete the phase checklist file from `phases/` directory
+   - Commit both changes together:
    ```bash
-   git add . && git commit -m "[{milestone-name}] Phase {N} complete - delete phase checklist"
+   git add milestones/{milestone}/milestone.md
+   git rm milestones/{milestone}/phases/{phase-number}-{description}.md
+   git commit -m "[{milestone-name}] Phase {N} complete - delete phase checklist"
    ```
-2. When a task is **100% complete**: In the same commit that marks it complete, delete the task file from `tasks/` directory
+
+2. When a task is **100% complete**:
+   - Update `milestone.md` to mark task as ✅ COMPLETE (if task-level tracking is used)
+   - Delete the task checklist file from `tasks/` directory
+   - Commit both changes together:
    ```bash
-   git add . && git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
+   git add milestones/{milestone}/milestone.md
+   git rm milestones/{milestone}/tasks/TASK-{name}.md
+   git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
    ```
-3. Update milestone.md to reflect completion (mark phase/task as ✅ COMPLETE) - do this BEFORE deleting the file
-4. Keep milestone.md in the repo as historical record (never delete)
+
+3. Keep `milestone.md` in the repo as historical record (never delete - it shows what was accomplished in each phase)
+4. CRITICAL: Do NOT update milestone.md and delete the checklist files in separate commits - they must be together
 
 **Context Window Management**:
 - If approaching context limit while working on a task:
