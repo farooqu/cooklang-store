@@ -5,10 +5,10 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apk add --no-cache \
-    musl-dev~1.2 \
-    pkgconfig~2.1 \
-    openssl-dev~3.1 \
-    openssl-libs-static~3.1
+    musl-dev \
+    pkgconfig \
+    openssl-dev \
+    openssl-libs-static
 
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
@@ -26,11 +26,11 @@ WORKDIR /app
 
 # Install minimal runtime dependencies
 RUN apk add --no-cache \
-    ca-certificates~20240226 \
-    libcrypto3~3.1 \
-    libssl3~3.1 \
-    git~2.43 \
-    curl~8.5
+    ca-certificates \
+    libcrypto3 \
+    libssl3 \
+    git \
+    curl
 
 # Create non-root user
 RUN addgroup -g 1000 cooklang && \
