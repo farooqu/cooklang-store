@@ -4,7 +4,7 @@ use regex::Regex;
 use std::path::Path;
 
 use crate::cache::{generate_recipe_id, CachedRecipe, RecipeIndex};
-use crate::parser::{parse_recipe, extract_recipe_title, generate_filename, should_rename_file};
+use crate::parser::{extract_recipe_title, generate_filename, parse_recipe, should_rename_file};
 use crate::storage::RecipeStorage;
 
 /// Represents the structure of a recipe (for API and display)
@@ -61,7 +61,10 @@ impl RecipeRepository {
                         Ok(title) => title,
                         Err(_) => {
                             // Fallback to path-based name if YAML front matter missing
-                            tracing::warn!("Recipe {} missing YAML front matter, using path-based name", git_path);
+                            tracing::warn!(
+                                "Recipe {} missing YAML front matter, using path-based name",
+                                git_path
+                            );
                             self.path_to_name(&git_path)
                         }
                     };
@@ -126,24 +129,27 @@ impl RecipeRepository {
         _comment: Option<&str>,
     ) -> Result<Recipe> {
         // Extract title from YAML front matter (content must have it)
-        let recipe_title = extract_recipe_title(content)
-            .map_err(|e| anyhow!("Invalid recipe content: {}", e))?;
+        let recipe_title =
+            extract_recipe_title(content).map_err(|e| anyhow!("Invalid recipe content: {}", e))?;
 
         // Validate the recipe can be parsed
-        parse_recipe(content, &recipe_title).map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
+        parse_recipe(content, &recipe_title)
+            .map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
 
         // Generate filename from the extracted title
         let filename = generate_filename(&recipe_title);
 
         // Generate path from filename and category
-        let git_path = self.generate_git_path_from_filename(&filename, category).await?;
+        let git_path = self
+            .generate_git_path_from_filename(&filename, category)
+            .await?;
 
         // Write to storage (source of truth)
         self.storage.write_file(&git_path, content)?;
 
         // Update cache
-        let parsed =
-            parse_recipe(content, &recipe_title).map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
+        let parsed = parse_recipe(content, &recipe_title)
+            .map_err(|e| anyhow!("Failed to parse recipe: {}", e))?;
 
         let recipe_id = generate_recipe_id(&git_path);
         let cached = CachedRecipe {
@@ -235,8 +241,7 @@ impl RecipeRepository {
         // Priority: extracted title from new content → provided name parameter → current name
         let new_title = if let Some(c) = content {
             // Extract title from new content if provided
-            extract_recipe_title(c)
-                .map_err(|e| anyhow!("Invalid recipe content: {}", e))?
+            extract_recipe_title(c).map_err(|e| anyhow!("Invalid recipe content: {}", e))?
         } else if let Some(n) = name {
             // Use provided name if content not changing
             n.to_string()
@@ -266,7 +271,8 @@ impl RecipeRepository {
 
         // Generate new git_path if anything changed
         let new_git_path = if filename_changed || category_changed {
-            self.generate_git_path_from_filename(&new_filename, new_category).await?
+            self.generate_git_path_from_filename(&new_filename, new_category)
+                .await?
         } else {
             git_path.to_string()
         };
@@ -444,7 +450,11 @@ impl RecipeRepository {
     }
 
     /// Generate a git path from a filename and category
-    async fn generate_git_path_from_filename(&self, filename: &str, category: Option<&str>) -> Result<String> {
+    async fn generate_git_path_from_filename(
+        &self,
+        filename: &str,
+        category: Option<&str>,
+    ) -> Result<String> {
         let mut path = if let Some(cat) = category {
             format!("recipes/{}/{}", cat, filename)
         } else {
@@ -470,11 +480,7 @@ impl RecipeRepository {
 
     /// Extract filename from a git path
     fn extract_filename_from_path(&self, git_path: &str) -> String {
-        git_path
-            .split('/')
-            .next_back()
-            .unwrap_or("")
-            .to_string()
+        git_path.split('/').next_back().unwrap_or("").to_string()
     }
 
     /// Convert recipe name to URL-friendly slug
@@ -550,7 +556,8 @@ mod tests {
     async fn test_create_recipe() -> Result<()> {
         let (repo, _git) = setup_test_repo().await?;
 
-        let content = "---\ntitle: Simple Recipe\n---\n\n# Simple Recipe\n\n@ingredient{} Some ingredient";
+        let content =
+            "---\ntitle: Simple Recipe\n---\n\n# Simple Recipe\n\n@ingredient{} Some ingredient";
         let recipe = repo
             .create("Simple Recipe", content, Some("desserts"))
             .await?;
@@ -800,15 +807,10 @@ mod tests {
         let content = "---\ntitle: Test\n---\n\n# Test Recipe\n\n@ingredient{}";
         let recipe = repo.create("Test", content, Some("desserts")).await?;
 
-        let new_content = "---\ntitle: New Name\n---\n\n# Test Recipe Updated\n\n@ingredient{} updated";
-        repo.update_with_author(
-            &recipe.git_path,
-            None,
-            Some(new_content),
-            None,
-            Some("Bob"),
-        )
-        .await?;
+        let new_content =
+            "---\ntitle: New Name\n---\n\n# Test Recipe Updated\n\n@ingredient{} updated";
+        repo.update_with_author(&recipe.git_path, None, Some(new_content), None, Some("Bob"))
+            .await?;
 
         let all = repo.list_all();
         let updated = all.iter().find(|r| r.name == "New Name").unwrap();
@@ -850,7 +852,8 @@ mod tests {
         let content = "---\ntitle: Test\n---\n\n# Test Recipe\n\n@ingredient{}";
         let recipe = repo.create("Test", content, Some("desserts")).await?;
 
-        let new_content = "---\ntitle: New Name\n---\n\n# Test Recipe Updated\n\n@ingredient{} updated";
+        let new_content =
+            "---\ntitle: New Name\n---\n\n# Test Recipe Updated\n\n@ingredient{} updated";
         repo.update_with_author_and_comment(
             &recipe.git_path,
             None,
@@ -905,8 +908,12 @@ mod tests {
             Some("desserts"),
         )
         .await?;
-        repo.create("Pasta", "---\ntitle: Pasta\n---\n\n# Pasta\n\n@ingredient{}", Some("mains"))
-            .await?;
+        repo.create(
+            "Pasta",
+            "---\ntitle: Pasta\n---\n\n# Pasta\n\n@ingredient{}",
+            Some("mains"),
+        )
+        .await?;
 
         let results = repo.search_by_name("cake");
         assert_eq!(results.len(), 2);
@@ -918,12 +925,24 @@ mod tests {
     async fn test_list_by_category() -> Result<()> {
         let (repo, _git) = setup_test_repo().await?;
 
-        repo.create("Cake", "---\ntitle: Cake\n---\n\n# Cake\n\n@ingredient{}", Some("desserts"))
-            .await?;
-        repo.create("Brownie", "---\ntitle: Brownie\n---\n\n# Brownie\n\n@ingredient{}", Some("desserts"))
-            .await?;
-        repo.create("Pasta", "---\ntitle: Pasta\n---\n\n# Pasta\n\n@ingredient{}", Some("mains"))
-            .await?;
+        repo.create(
+            "Cake",
+            "---\ntitle: Cake\n---\n\n# Cake\n\n@ingredient{}",
+            Some("desserts"),
+        )
+        .await?;
+        repo.create(
+            "Brownie",
+            "---\ntitle: Brownie\n---\n\n# Brownie\n\n@ingredient{}",
+            Some("desserts"),
+        )
+        .await?;
+        repo.create(
+            "Pasta",
+            "---\ntitle: Pasta\n---\n\n# Pasta\n\n@ingredient{}",
+            Some("mains"),
+        )
+        .await?;
 
         let desserts = repo.list_by_category("desserts");
         assert_eq!(desserts.len(), 2);
@@ -1074,9 +1093,7 @@ mod tests {
         ];
 
         for (content, expected_filename) in test_cases {
-            let recipe = repo
-                .create("Test", content, Some("test"))
-                .await?;
+            let recipe = repo.create("Test", content, Some("test")).await?;
             assert_eq!(recipe.file_name, expected_filename);
             // Clean up for next iteration
             repo.delete(&recipe.git_path).await?;
@@ -1091,13 +1108,16 @@ mod tests {
 
         // Create recipe with initial title
         let content = "---\ntitle: Chocolate Cake\n---\n\nBasic chocolate cake recipe.";
-        let recipe = repo.create("Chocolate Cake", content, Some("desserts")).await?;
+        let recipe = repo
+            .create("Chocolate Cake", content, Some("desserts"))
+            .await?;
 
         let initial_git_path = recipe.git_path.clone();
         assert_eq!(recipe.file_name, "chocolate-cake.cook");
 
         // Update content with new title
-        let new_content = "---\ntitle: Dark Chocolate Cake\n---\n\nRicher chocolate cake with dark cocoa.";
+        let new_content =
+            "---\ntitle: Dark Chocolate Cake\n---\n\nRicher chocolate cake with dark cocoa.";
         let updated = repo
             .update(&initial_git_path, None, Some(new_content), None)
             .await?;
@@ -1125,7 +1145,9 @@ mod tests {
 
         // Create recipe in desserts category
         let content = "---\ntitle: Vanilla Cake\n---\n\nSimple vanilla cake.";
-        let recipe = repo.create("Vanilla Cake", content, Some("desserts")).await?;
+        let recipe = repo
+            .create("Vanilla Cake", content, Some("desserts"))
+            .await?;
 
         let initial_git_path = recipe.git_path.clone();
         assert_eq!(recipe.category, Some("desserts".to_string()));
@@ -1167,7 +1189,12 @@ mod tests {
         // Update both content (new title) AND category
         let new_content = "---\ntitle: Spaghetti Carbonara\n---\n\nClassic Italian pasta.";
         let updated = repo
-            .update(&initial_git_path, None, Some(new_content), Some(Some("italian")))
+            .update(
+                &initial_git_path,
+                None,
+                Some(new_content),
+                Some(Some("italian")),
+            )
             .await?;
 
         // Verify both changes
@@ -1264,7 +1291,10 @@ mod tests {
         assert!(repo.cache.get(&initial_git_path).is_none());
 
         // New recipe_id should be retrievable
-        assert_eq!(repo.get_recipe_git_path(&new_recipe_id), Some(updated.git_path.clone()));
+        assert_eq!(
+            repo.get_recipe_git_path(&new_recipe_id),
+            Some(updated.git_path.clone())
+        );
 
         Ok(())
     }
