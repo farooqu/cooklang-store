@@ -1,5 +1,7 @@
 # Milestone: Category Field Semantics & Path Handling Refactor
 
+**Status**: Phase 1 Complete (API Specification) | Nov 9, 2025
+
 **Goal**: Clarify API to properly represent recipe locations and derive titles from content metadata. Replace ambiguous "category" field with explicit "path" and "file_name" fields. Move source of truth for recipe names to Cooklang metadata.
 
 **Design Decisions**:
@@ -57,9 +59,9 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ---
 
-## Phase 1: API Specification
+## Phase 1: API Specification ✅ COMPLETE
 
-### Task 1.1: Update OpenAPI Spec (openapi.yaml)
+### Task 1.1: Update OpenAPI Spec (openapi.yaml) ✅
 
 **RecipeResponse schema**:
 - [ ] Update to include: `recipeId`, `recipeName`, `path`, `fileName`, `description`, `content`
@@ -99,7 +101,7 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 - [ ] Add note about Recipe ID stability in spec description or info section
 - [ ] Validate YAML syntax: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"`
 
-### Task 1.2: Update API.md Documentation
+### Task 1.2: Update API.md Documentation ✅
 - [ ] Update Common Response Format section with both RecipeResponse and RecipeSummary schemas
 - [ ] Add note: null fields omitted from JSON (using `skip_serializing_if`)
 - [ ] Update Create Recipe endpoint: show request with only `content` and optional `path`, `author`, `comment`
