@@ -178,9 +178,15 @@ milestones/
 ```
 
 **Cleanup Rules**:
-1. When a phase is **100% complete**: commit the final changes, then delete the phase file from `phases/` directory
-2. When a task is **100% complete**: commit the final changes, then delete the task file from `tasks/` directory
-3. Update the milestone.md to reflect completion (mark phase as ✅ COMPLETE)
+1. When a phase is **100% complete**: In the same commit that marks it complete, delete the phase file from `phases/` directory
+   ```bash
+   git add . && git commit -m "[{milestone-name}] Phase {N} complete - delete phase checklist"
+   ```
+2. When a task is **100% complete**: In the same commit that marks it complete, delete the task file from `tasks/` directory
+   ```bash
+   git add . && git commit -m "[{milestone-name}] Task {name} complete - delete task checklist"
+   ```
+3. Update milestone.md to reflect completion (mark phase/task as ✅ COMPLETE) - do this BEFORE deleting the file
 4. Keep milestone.md in the repo as historical record (never delete)
 
 **Context Window Management**:
