@@ -14,7 +14,7 @@ pub fn parse_recipe(content: &str, name: &str) -> Result<ScalableRecipe, String>
 /// Extracts the recipe title from Cooklang content's YAML front matter.
 ///
 /// Expected format:
-/// ```
+/// ```text
 /// ---
 /// title: Recipe Name
 /// ---
@@ -35,7 +35,7 @@ pub fn parse_recipe(content: &str, name: &str) -> Result<ScalableRecipe, String>
 /// # Examples
 /// ```
 /// # use cooklang_store::parser::extract_recipe_title;
-/// let content = "---\ntitle: Chocolate Cake\n---\n\n# Recipe content";
+/// let content = "---\ntitle: Chocolate Cake\n---\n\nRecipe content";
 /// let title = extract_recipe_title(content).unwrap();
 /// assert_eq!(title, "Chocolate Cake");
 /// ```
@@ -93,6 +93,101 @@ pub fn extract_recipe_title(content: &str) -> Result<String> {
     }
 
     Ok(title.to_string())
+}
+
+/// Generates a filename from a recipe title.
+///
+/// This function:
+/// - Converts the title to lowercase
+/// - Replaces spaces and special characters with hyphens
+/// - Removes consecutive hyphens, collapsing to a single hyphen
+/// - Removes leading and trailing hyphens
+/// - Appends the `.cook` extension
+///
+/// # Arguments
+/// * `title` - The recipe title to convert to a filename
+///
+/// # Returns
+/// * `String` - The generated filename (lowercase, hyphen-separated, with .cook extension)
+///
+/// # Examples
+/// ```
+/// # use cooklang_store::parser::generate_filename;
+/// assert_eq!(generate_filename("Chocolate Cake"), "chocolate-cake.cook");
+/// assert_eq!(generate_filename("Quick & Easy Recipe"), "quick-easy-recipe.cook");
+/// assert_eq!(generate_filename("5-Ingredient Chili"), "5-ingredient-chili.cook");
+/// ```
+pub fn generate_filename(title: &str) -> String {
+    // Convert to lowercase
+    let mut filename = title.to_lowercase();
+
+    // Replace spaces and special characters with hyphens
+    // Keep alphanumeric, hyphens, and dots (dots might appear in numbers like "1.5")
+    filename = filename
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '.' {
+                c
+            } else if c.is_whitespace() {
+                '-'
+            } else {
+                // Replace special characters with hyphens
+                '-'
+            }
+        })
+        .collect();
+
+    // Remove consecutive hyphens
+    while filename.contains("--") {
+        filename = filename.replace("--", "-");
+    }
+
+    // Remove leading and trailing hyphens
+    filename = filename.trim_matches('-').to_string();
+
+    // Append .cook extension
+    format!("{}.cook", filename)
+}
+
+/// Normalizes a file path by removing leading/trailing slashes and validating characters.
+///
+/// This function:
+/// - Removes leading and trailing slashes
+/// - Validates that the path only contains alphanumeric characters, hyphens, underscores, dots, and slashes
+/// - Returns an error if the path contains invalid characters
+/// - Returns an error if the path is empty after normalization
+///
+/// # Arguments
+/// * `path` - The file path to normalize
+///
+/// # Returns
+/// * `Ok(String)` - The normalized path
+/// * `Err` - If the path contains invalid characters or is empty after normalization
+///
+/// # Examples
+/// ```
+/// # use cooklang_store::parser::normalize_path;
+/// assert_eq!(normalize_path("/recipes/chocolate-cake.cook").unwrap(), "recipes/chocolate-cake.cook");
+/// assert_eq!(normalize_path("recipes/desserts/cake.cook/").unwrap(), "recipes/desserts/cake.cook");
+/// ```
+pub fn normalize_path(path: &str) -> Result<String> {
+    let trimmed = path.trim_matches('/');
+
+    if trimmed.is_empty() {
+        return Err(anyhow!("Path is empty after normalization"));
+    }
+
+    // Validate characters: allow alphanumeric, hyphens, underscores, dots, and slashes
+    for c in trimmed.chars() {
+        if !c.is_alphanumeric() && c != '-' && c != '_' && c != '.' && c != '/' {
+            return Err(anyhow!(
+                "Path contains invalid character '{}'. Allowed: alphanumeric, hyphens, underscores, dots, slashes",
+                c
+            ));
+        }
+    }
+
+    Ok(trimmed.to_string())
 }
 
 #[cfg(test)]
@@ -335,5 +430,243 @@ Add @eggs{2} to the bowl."#;
         let result = extract_recipe_title(&content);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), long_title);
+    }
+
+    // Tests for generate_filename
+    #[test]
+    fn test_generate_filename_simple_title() {
+        assert_eq!(generate_filename("Chocolate Cake"), "chocolate-cake.cook");
+    }
+
+    #[test]
+    fn test_generate_filename_already_lowercase() {
+        assert_eq!(generate_filename("pasta carbonara"), "pasta-carbonara.cook");
+    }
+
+    #[test]
+    fn test_generate_filename_all_uppercase() {
+        assert_eq!(generate_filename("BEEF STEAK"), "beef-steak.cook");
+    }
+
+    #[test]
+    fn test_generate_filename_mixed_case() {
+        assert_eq!(
+            generate_filename("Chocolate Layer Cake"),
+            "chocolate-layer-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_special_characters() {
+        assert_eq!(
+            generate_filename("Quick & Easy Recipe"),
+            "quick-easy-recipe.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_numbers() {
+        assert_eq!(
+            generate_filename("5-Ingredient Chili"),
+            "5-ingredient-chili.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_apostrophe() {
+        assert_eq!(
+            generate_filename("Mom's Secret Sauce"),
+            "mom-s-secret-sauce.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_parentheses() {
+        assert_eq!(generate_filename("Pasta (Homemade)"), "pasta-homemade.cook");
+    }
+
+    #[test]
+    fn test_generate_filename_with_multiple_spaces() {
+        assert_eq!(
+            generate_filename("Chocolate    Cake"),
+            "chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_leading_trailing_spaces() {
+        assert_eq!(
+            generate_filename("  Chocolate Cake  "),
+            "chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_special_chars_consecutive() {
+        assert_eq!(
+            generate_filename("Cake & Frosting & Berries"),
+            "cake-frosting-berries.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_unicode_characters() {
+        assert_eq!(
+            generate_filename("Gâteau Chocolat Français"),
+            "gâteau-chocolat-français.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_with_dots_in_numbers() {
+        assert_eq!(
+            generate_filename("1.5 Liter Smoothie"),
+            "1.5-liter-smoothie.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_single_word() {
+        assert_eq!(generate_filename("Brownies"), "brownies.cook");
+    }
+
+    #[test]
+    fn test_generate_filename_with_hyphens() {
+        assert_eq!(
+            generate_filename("Chocolate-Chip Cookies"),
+            "chocolate-chip-cookies.cook"
+        );
+    }
+
+    #[test]
+    fn test_generate_filename_empty_title() {
+        assert_eq!(generate_filename(""), ".cook");
+    }
+
+    #[test]
+    fn test_generate_filename_only_special_characters() {
+        assert_eq!(generate_filename("&&&"), ".cook");
+    }
+
+    #[test]
+    fn test_generate_filename_very_long_title() {
+        let long_title = "The Most Delicious and Decadent Triple-Layer Chocolate Cake with Ganache";
+        let result = generate_filename(long_title);
+        assert!(result.ends_with(".cook"));
+        assert!(result
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '.'));
+    }
+
+    // Tests for normalize_path
+    #[test]
+    fn test_normalize_path_simple() {
+        assert_eq!(
+            normalize_path("recipes/chocolate-cake.cook").unwrap(),
+            "recipes/chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_with_leading_slash() {
+        assert_eq!(
+            normalize_path("/recipes/chocolate-cake.cook").unwrap(),
+            "recipes/chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_with_trailing_slash() {
+        assert_eq!(
+            normalize_path("recipes/chocolate-cake.cook/").unwrap(),
+            "recipes/chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_with_leading_and_trailing_slashes() {
+        assert_eq!(
+            normalize_path("/recipes/chocolate-cake.cook/").unwrap(),
+            "recipes/chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_nested_directories() {
+        assert_eq!(
+            normalize_path("/recipes/desserts/cakes/chocolate-cake.cook").unwrap(),
+            "recipes/desserts/cakes/chocolate-cake.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_with_underscores() {
+        assert_eq!(
+            normalize_path("recipes/my_recipe.cook").unwrap(),
+            "recipes/my_recipe.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_with_numbers() {
+        assert_eq!(
+            normalize_path("recipes/5-ingredient-chili.cook").unwrap(),
+            "recipes/5-ingredient-chili.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_single_file() {
+        assert_eq!(normalize_path("recipe.cook").unwrap(), "recipe.cook");
+    }
+
+    #[test]
+    fn test_normalize_path_empty_string() {
+        assert!(normalize_path("").is_err());
+        assert!(normalize_path("")
+            .unwrap_err()
+            .to_string()
+            .contains("empty"));
+    }
+
+    #[test]
+    fn test_normalize_path_only_slashes() {
+        assert!(normalize_path("///").is_err());
+        assert!(normalize_path("///")
+            .unwrap_err()
+            .to_string()
+            .contains("empty"));
+    }
+
+    #[test]
+    fn test_normalize_path_with_spaces() {
+        assert!(normalize_path("recipes/chocolate cake.cook").is_err());
+        assert!(normalize_path("recipes/chocolate cake.cook")
+            .unwrap_err()
+            .to_string()
+            .contains("invalid character"));
+    }
+
+    #[test]
+    fn test_normalize_path_with_special_characters() {
+        assert!(normalize_path("recipes/cake&frosting.cook").is_err());
+        assert!(normalize_path("recipes/cake@frosting.cook").is_err());
+        assert!(normalize_path("recipes/cake#frosting.cook").is_err());
+    }
+
+    #[test]
+    fn test_normalize_path_with_dots_in_filename() {
+        assert_eq!(
+            normalize_path("recipes/1.5.liter.smoothie.cook").unwrap(),
+            "recipes/1.5.liter.smoothie.cook"
+        );
+    }
+
+    #[test]
+    fn test_normalize_path_mixed_valid_chars() {
+        assert_eq!(
+            normalize_path("/recipes/desserts/my_5-ingredient_cake.cook/").unwrap(),
+            "recipes/desserts/my_5-ingredient_cake.cook"
+        );
     }
 }

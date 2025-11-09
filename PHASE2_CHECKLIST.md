@@ -27,13 +27,19 @@
 
 ---
 
-## Task 2.2: Add Filename Generation & Normalization
+## Task 2.2: Add Filename Generation & Normalization ✅ COMPLETE
 
-- [ ] Create function `generate_filename(title: &str) -> String`
-- [ ] Convert title to lowercase, replace spaces/special chars with hyphens
-- [ ] Append `.cook` extension
-- [ ] Create function to normalize paths (remove leading/trailing slashes, validate allowed chars)
-- [ ] Add unit tests (normal names, special chars, unicode, edge cases)
+- [x] Create function `generate_filename(title: &str) -> String`
+- [x] Convert title to lowercase, replace spaces/special chars with hyphens
+- [x] Append `.cook` extension
+- [x] Create function to normalize paths (remove leading/trailing slashes, validate allowed chars)
+- [x] Add unit tests (normal names, special chars, unicode, edge cases)
+
+**Implementation Details**:
+- Added `generate_filename(title: &str) -> String` in `src/parser/mod.rs` - converts title to lowercase, replaces special chars with hyphens, removes consecutive/leading/trailing hyphens, appends `.cook` extension
+- Added `normalize_path(path: &str) -> Result<String>` in `src/parser/mod.rs` - removes leading/trailing slashes, validates allowed characters (alphanumeric, hyphens, underscores, dots, slashes)
+- 30 comprehensive unit tests covering standard cases, special characters, unicode, edge cases, and error conditions
+- All 58 existing tests still pass; no regressions
 
 **Commit Message**: `[Phase2.2] Add filename generation and path normalization utilities`
 
