@@ -192,10 +192,13 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 
 - **PROJECT_PLAN.md**: Update whenever you:
   - Complete a milestone (mark as done with date)
+  - Complete a phase (clean up implementation details, keep only high-level summary)
   - Make architectural decisions
   - Add or remove planned features
   - Identify new technical debt
   - Change project priorities or timeline
+  
+  **IMPORTANT - Keep Context Lean**: When marking a phase as complete, remove detailed implementation information (design rationale, detailed structures, code examples, etc.). Replace with a brief bullet-point summary of what was accomplished. This prevents context bloat for future AI agents. See the "Completed: Phase 1 & 2" section as a reference example.
 
 - **docs/TESTING.md**: Update whenever you:
   - Add new test cases or test patterns
