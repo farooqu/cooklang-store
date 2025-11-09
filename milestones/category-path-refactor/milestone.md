@@ -1,6 +1,6 @@
 # Milestone: Category Field Semantics & Path Handling Refactor
 
-**Status**: Phases 1-2 Complete | Nov 9, 2025
+**Status**: Phases 1-4 Complete | Nov 9, 2025
 
 **Goal**: Clarify API to properly represent recipe locations and derive titles from content metadata. Replace ambiguous "category" field with explicit "path" and "file_name" fields. Move source of truth for recipe names to Cooklang metadata.
 
@@ -93,9 +93,14 @@ Note: No `fileName` or `content` in summaries; `description` omitted if null
 
 ---
 
-## Phase 4: API Handlers ❌ NOT STARTED
+## Phase 4: API Handlers ✅ COMPLETE
 
-See: `milestones/category-path-refactor/phases/04-api-handlers.md`
+**Completed** (Nov 9, 2025):
+- Updated all CRUD handlers (create, update, get, list) with new request/response schemas
+- Validation enforces YAML front matter with `title` field for content
+- Title extraction from metadata, filename generation, and file renaming all working
+- Added two fallback lookup endpoints for ID migration: find-by-name and find-by-path
+- All 70 API integration tests passing
 
 ---
 

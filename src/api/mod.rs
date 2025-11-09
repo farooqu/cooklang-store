@@ -23,6 +23,8 @@ pub fn build_router(repo: Arc<RecipeRepository>) -> Router {
         .route("/recipes", post(handlers::create_recipe))
         .route("/recipes", get(handlers::list_recipes))
         .route("/recipes/search", get(handlers::search_recipes))
+        .route("/recipes/find-by-name", get(handlers::find_recipe_by_name))
+        .route("/recipes/find-by-path", get(handlers::find_recipe_by_path))
         .route("/recipes/:recipe_id", get(handlers::get_recipe))
         .route("/recipes/:recipe_id", put(handlers::update_recipe))
         .route("/recipes/:recipe_id", delete(handlers::delete_recipe))

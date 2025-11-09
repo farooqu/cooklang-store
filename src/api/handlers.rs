@@ -5,7 +5,9 @@ use axum::{
 };
 use std::sync::Arc;
 
-use crate::{cache::generate_recipe_id, repository::RecipeRepository};
+use crate::{
+    cache::generate_recipe_id, parser::extract_recipe_title, repository::RecipeRepository,
+};
 
 use super::{
     models::{CreateRecipeRequest, ListQuery, PaginationInfo, SearchQuery, UpdateRecipeRequest},
@@ -35,17 +37,7 @@ pub async fn create_recipe(
     State(repo): State<Arc<RecipeRepository>>,
     Json(payload): Json<CreateRecipeRequest>,
 ) -> Result<(StatusCode, Json<RecipeResponse>), (StatusCode, Json<ErrorResponse>)> {
-    // Validate input
-    if payload.name.trim().is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new(
-                "validation_error",
-                "Recipe name cannot be empty",
-            )),
-        ));
-    }
-
+    // Validate content is not empty
     if payload.content.trim().is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -56,21 +48,36 @@ pub async fn create_recipe(
         ));
     }
 
-    // Convert empty category string to None
-    let category = payload.category.as_deref().and_then(|cat| {
-        if cat.trim().is_empty() {
-            None
-        } else {
-            Some(cat)
+    // Extract title from content (validates YAML front matter exists)
+    let recipe_title = match extract_recipe_title(&payload.content) {
+        Ok(title) => title,
+        Err(e) => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new(
+                    "validation_error",
+                    format!(
+                        "Recipe content must include YAML front matter with 'title' field: {}",
+                        e
+                    ),
+                )),
+            ));
         }
-    });
+    };
+
+    // Default path to empty string (root) if not provided
+    let path = payload
+        .path
+        .as_deref()
+        .map(|p| if p.trim().is_empty() { None } else { Some(p) })
+        .flatten();
 
     // Create recipe
     match repo
         .create_with_author_and_comment(
-            &payload.name,
+            &recipe_title,
             &payload.content,
-            category,
+            path,
             payload.author.as_deref(),
             payload.comment.as_deref(),
         )
@@ -82,10 +89,11 @@ pub async fn create_recipe(
                 StatusCode::CREATED,
                 Json(RecipeResponse {
                     recipe_id,
-                    name: recipe.name,
-                    description: recipe.description,
-                    category: recipe.category,
+                    recipe_name: recipe.name,
+                    path: recipe.category,
+                    file_name: recipe.file_name,
                     content: recipe.content,
+                    description: recipe.description,
                 }),
             ))
         }
@@ -118,9 +126,8 @@ pub async fn list_recipes(
             let recipe_id = generate_recipe_id(&recipe.git_path);
             RecipeSummary {
                 recipe_id,
-                name: recipe.name,
-                description: recipe.description,
-                category: recipe.category,
+                recipe_name: recipe.name,
+                path: recipe.category,
             }
         })
         .collect();
@@ -164,9 +171,8 @@ pub async fn search_recipes(
             let recipe_id = generate_recipe_id(&recipe.git_path);
             RecipeSummary {
                 recipe_id,
-                name: recipe.name,
-                description: recipe.description,
-                category: recipe.category,
+                recipe_name: recipe.name,
+                path: recipe.category,
             }
         })
         .collect();
@@ -197,10 +203,11 @@ pub async fn get_recipe(
     match repo.read(&git_path).await {
         Ok(recipe) => Ok(Json(RecipeResponse {
             recipe_id,
-            name: recipe.name,
-            description: recipe.description,
-            category: recipe.category,
+            recipe_name: recipe.name,
+            path: recipe.category,
+            file_name: recipe.file_name,
             content: recipe.content,
+            description: recipe.description,
         })),
         Err(e) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -218,6 +225,17 @@ pub async fn update_recipe(
     Path(recipe_id): Path<String>,
     Json(payload): Json<UpdateRecipeRequest>,
 ) -> Result<Json<RecipeResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Validate at least one field is provided
+    if payload.content.is_none() && payload.path.is_none() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new(
+                "validation_error",
+                "At least one of 'content' or 'path' must be provided",
+            )),
+        ));
+    }
+
     // Look up git_path from recipe_id
     let git_path = repo.get_recipe_git_path(&recipe_id).ok_or_else(|| {
         (
@@ -226,23 +244,32 @@ pub async fn update_recipe(
         )
     })?;
 
-    // Convert empty category string to None
-    let category = payload.category.as_ref().map(|cat_opt| {
-        cat_opt.as_ref().and_then(|cat| {
-            if cat.trim().is_empty() {
-                None
-            } else {
-                Some(cat.as_str())
-            }
-        })
-    });
+    // If content provided, validate it has YAML front matter with title
+    if let Some(ref content) = payload.content {
+        if extract_recipe_title(content).is_err() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::new(
+                    "validation_error",
+                    "Recipe content must include YAML front matter with 'title' field",
+                )),
+            ));
+        }
+    }
+
+    // Convert empty path string to None
+    let path = payload
+        .path
+        .as_deref()
+        .map(|p| if p.trim().is_empty() { None } else { Some(p) })
+        .flatten();
 
     match repo
         .update_with_author_and_comment(
             &git_path,
-            payload.name.as_deref(),
+            None, // name parameter deprecated (extracted from content)
             payload.content.as_deref(),
-            category,
+            path.map(Some),
             payload.author.as_deref(),
             payload.comment.as_deref(),
         )
@@ -252,10 +279,11 @@ pub async fn update_recipe(
             let updated_id = generate_recipe_id(&recipe.git_path);
             Ok(Json(RecipeResponse {
                 recipe_id: updated_id,
-                name: recipe.name,
-                description: recipe.description,
-                category: recipe.category,
+                recipe_name: recipe.name,
+                path: recipe.category,
+                file_name: recipe.file_name,
                 content: recipe.content,
+                description: recipe.description,
             }))
         }
         Err(e) => Err((
@@ -293,6 +321,90 @@ pub async fn delete_recipe(
     }
 }
 
+/// Find recipes by name (fallback lookup for when IDs change)
+pub async fn find_recipe_by_name(
+    State(repo): State<Arc<RecipeRepository>>,
+    Query(params): Query<SearchQuery>,
+) -> Result<Json<RecipeListResponse>, (StatusCode, Json<ErrorResponse>)> {
+    if params.q.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::new(
+                "validation_error",
+                "Search query cannot be empty",
+            )),
+        ));
+    }
+
+    let limit = std::cmp::min(params.limit.unwrap_or(20), 100);
+    let offset = params.offset.unwrap_or(0);
+
+    let all_results = repo.search_by_name(&params.q);
+    let total = all_results.len() as u32;
+
+    let recipes: Vec<RecipeSummary> = all_results
+        .into_iter()
+        .skip(offset as usize)
+        .take(limit as usize)
+        .map(|recipe| {
+            let recipe_id = generate_recipe_id(&recipe.git_path);
+            RecipeSummary {
+                recipe_id,
+                recipe_name: recipe.name,
+                path: recipe.category,
+            }
+        })
+        .collect();
+
+    Ok(Json(RecipeListResponse {
+        recipes,
+        pagination: PaginationInfo {
+            limit,
+            offset,
+            total,
+        },
+    }))
+}
+
+/// Find a recipe by exact path (fallback lookup for when IDs change)
+#[derive(serde::Deserialize)]
+pub struct FindByPathQuery {
+    pub path: Option<String>,
+}
+
+pub async fn find_recipe_by_path(
+    State(repo): State<Arc<RecipeRepository>>,
+    Query(params): Query<FindByPathQuery>,
+) -> Result<Json<RecipeSummary>, (StatusCode, Json<ErrorResponse>)> {
+    let path = params.path.as_deref().unwrap_or("");
+
+    // Try to find a recipe in the specified path
+    // Since we don't have a direct lookup by path, search all recipes
+    let all_recipes = repo.list_all();
+
+    let matching = all_recipes
+        .into_iter()
+        .find(|recipe| recipe.category.as_deref().unwrap_or("") == path);
+
+    match matching {
+        Some(recipe) => {
+            let recipe_id = generate_recipe_id(&recipe.git_path);
+            Ok(Json(RecipeSummary {
+                recipe_id,
+                recipe_name: recipe.name,
+                path: recipe.category,
+            }))
+        }
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new(
+                "not_found",
+                format!("No recipe found at path '{}'", path),
+            )),
+        )),
+    }
+}
+
 /// List all categories
 pub async fn list_categories(
     State(repo): State<Arc<RecipeRepository>>,
@@ -313,7 +425,7 @@ pub async fn get_category_recipes(
             StatusCode::NOT_FOUND,
             Json(ErrorResponse::new(
                 "not_found",
-                format!("Category '{}' not found", category_name),
+                format!("Path '{}' not found", category_name),
             )),
         ));
     }
@@ -325,9 +437,8 @@ pub async fn get_category_recipes(
             let recipe_id = generate_recipe_id(&recipe.git_path);
             RecipeSummary {
                 recipe_id,
-                name: recipe.name,
-                description: recipe.description,
-                category: recipe.category,
+                recipe_name: recipe.name,
+                path: recipe.category,
             }
         })
         .collect();
@@ -335,7 +446,7 @@ pub async fn get_category_recipes(
     let count = summaries.len();
 
     Ok(Json(CategoryRecipesResponse {
-        category: category_name,
+        path: category_name,
         recipes: summaries,
         count,
     }))

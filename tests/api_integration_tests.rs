@@ -71,9 +71,8 @@ async fn test_create_recipe_impl(backend: &str) -> TempDir {
 
     let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": content.clone(),
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -90,9 +89,9 @@ async fn test_create_recipe_impl(backend: &str) -> TempDir {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Test Recipe");
-    assert_eq!(json["category"], "desserts");
-    assert!(json["recipe_id"].is_string());
+    assert_eq!(json["recipeName"], "Test Recipe");
+    assert_eq!(json["path"], "desserts");
+    assert!(json["recipeId"].is_string());
 
     // Verify file was created on disk
     let filename = verify_recipe_file_exists(&temp_dir, "Test Recipe", "desserts");
@@ -125,9 +124,8 @@ async fn test_create_recipe_with_comment_impl(backend: &str) {
 
     let content = load_recipe_fixture("chocolate-cake");
     let payload = serde_json::json!({
-        "name": "Chocolate Cake",
         "content": content,
-        "category": "desserts",
+        "path": "desserts",
         "comment": "Classic chocolate recipe"
     });
 
@@ -141,8 +139,8 @@ async fn test_create_recipe_with_comment_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Chocolate Cake");
-    assert_eq!(json["category"], "desserts");
+    assert_eq!(json["recipeName"], "Chocolate Cake");
+    assert_eq!(json["path"], "desserts");
 }
 
 #[tokio::test]
@@ -159,11 +157,10 @@ async fn test_create_recipe_empty_name_impl(backend: &str) {
     let (build_router, _temp_dir) = setup_api_with_storage(backend).await;
     let app = build_router();
 
-    let content = load_recipe_fixture("test-recipe");
+    // Empty name is no longer relevant - test empty content instead (which will also lack YAML front matter)
     let payload = serde_json::json!({
-        "name": "",
-        "content": content,
-        "category": "desserts"
+        "content": "",
+        "path": "desserts"
     });
 
     let response = app
@@ -190,9 +187,8 @@ async fn test_create_recipe_empty_category_impl(backend: &str) -> TempDir {
 
     let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": content.clone(),
-        "category": ""
+        "path": ""
     });
 
     let response = app
@@ -204,13 +200,13 @@ async fn test_create_recipe_empty_category_impl(backend: &str) -> TempDir {
         .await
         .unwrap();
 
-    // Empty category string is treated as no category (None), so should succeed
+    // Empty path string is treated as no path (None), so should succeed
     assert_eq!(response.status(), axum::http::StatusCode::CREATED);
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(json["name"], "Test Recipe");
-    assert!(json["recipe_id"].is_string());
+    assert_eq!(json["recipeName"], "Test Recipe");
+    assert!(json["recipeId"].is_string());
 
     // Verify file was created at root of recipes directory (not in a category subdirectory)
     let filename = verify_recipe_file_exists_at_root(&temp_dir, "Test Recipe");
@@ -242,9 +238,8 @@ async fn test_create_recipe_empty_content_impl(backend: &str) {
     let app = build_router();
 
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": "",
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -398,9 +393,8 @@ async fn test_get_recipe_by_id_impl(backend: &str) {
     // Create a recipe
     let content = load_recipe_fixture("test-recipe");
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app1
@@ -410,7 +404,7 @@ async fn test_get_recipe_by_id_impl(backend: &str) {
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap();
+    let recipe_id = json["recipeId"].as_str().unwrap();
 
     // Retrieve the recipe
     let app2 = build_router();
@@ -428,8 +422,8 @@ async fn test_get_recipe_by_id_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Test Recipe");
-    assert_eq!(json["category"], "desserts");
+    assert_eq!(json["recipeName"], "Test Recipe");
+    assert_eq!(json["path"], "desserts");
 }
 
 #[tokio::test]
@@ -499,7 +493,7 @@ async fn test_search_recipes_by_name_impl(backend: &str) {
 
     let names: Vec<&str> = results
         .iter()
-        .map(|r| r["name"].as_str().unwrap())
+        .map(|r| r["recipeName"].as_str().unwrap())
         .collect();
     assert!(names.contains(&"Chocolate Cake"));
     assert!(names.contains(&"Vanilla Cake"));
@@ -649,7 +643,7 @@ async fn test_get_recipes_in_category_impl(backend: &str) {
 
     let names: Vec<&str> = recipes
         .iter()
-        .map(|r| r["name"].as_str().unwrap())
+        .map(|r| r["recipeName"].as_str().unwrap())
         .collect();
     assert!(names.contains(&"Cake"));
     assert!(names.contains(&"Cake"));
@@ -698,9 +692,8 @@ async fn test_update_recipe_impl(backend: &str) -> TempDir {
     // Create a recipe
     let create_content = load_recipe_fixture("original-name");
     let create_payload = serde_json::json!({
-        "name": "Original Name",
         "content": create_content.clone(),
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app1
@@ -714,7 +707,7 @@ async fn test_update_recipe_impl(backend: &str) -> TempDir {
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipe_id = json["recipeId"].as_str().unwrap().to_string();
 
     // Verify original file exists
     verify_recipe_file_exists(&temp_dir, "Original Name", "desserts");
@@ -725,9 +718,8 @@ async fn test_update_recipe_impl(backend: &str) -> TempDir {
     let app2 = build_router();
     let update_content = load_recipe_fixture("updated-name");
     let update_payload = serde_json::json!({
-        "name": "Updated Name",
         "content": update_content.clone(),
-        "category": "main"
+        "path": "main"
     });
 
     let response = app2
@@ -744,8 +736,8 @@ async fn test_update_recipe_impl(backend: &str) -> TempDir {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Updated Name");
-    assert_eq!(json["category"], "main");
+    assert_eq!(json["recipeName"], "Updated Name");
+    assert_eq!(json["path"], "main");
 
     // Verify file was updated on disk (moved to new category)
     let filename = verify_recipe_file_exists(&temp_dir, "Updated Name", "main");
@@ -783,9 +775,8 @@ async fn test_update_recipe_not_found_impl(backend: &str) {
     let app = build_router();
 
     let payload = serde_json::json!({
-        "name": "Updated",
         "content": "# Updated\n\n@flour{2%cup}",
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -821,9 +812,8 @@ async fn test_delete_recipe_impl(backend: &str) -> TempDir {
     // Create a recipe
     let content = load_recipe_fixture("to-delete");
     let payload = serde_json::json!({
-        "name": "To Delete",
         "content": content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app1
@@ -833,7 +823,7 @@ async fn test_delete_recipe_impl(backend: &str) -> TempDir {
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipe_id = json["recipeId"].as_str().unwrap().to_string();
 
     // Verify file exists before deletion
     verify_recipe_file_exists(&temp_dir, "To Delete", "desserts");
@@ -958,9 +948,8 @@ async fn test_create_recipe_in_nested_category_impl(backend: &str) -> TempDir {
     // Create recipe in nested category
     let content = load_recipe_fixture("chicken-biryani");
     let create_payload = serde_json::json!({
-        "name": "Chicken Biryani",
         "content": content,
-        "category": "meals/meat/traditional"
+        "path": "meals/meat/traditional"
     });
 
     let response = app
@@ -977,8 +966,8 @@ async fn test_create_recipe_in_nested_category_impl(backend: &str) -> TempDir {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Chicken Biryani");
-    assert_eq!(json["category"], "meals/meat/traditional");
+    assert_eq!(json["recipeName"], "Chicken Biryani");
+    assert_eq!(json["path"], "meals/meat/traditional");
 
     // Verify nested directory structure exists on disk
     verify_recipe_file_exists(&temp_dir, "Chicken Biryani", "meals/meat/traditional");
@@ -1023,9 +1012,9 @@ async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     let recipes = json["recipes"].as_array().unwrap();
     assert_eq!(recipes.len(), 1);
 
-    let recipe_id = recipes[0]["recipe_id"].as_str().unwrap().to_string();
-    assert_eq!(recipes[0]["name"], "Thai Green Curry");
-    assert_eq!(recipes[0]["category"], "meals/asian/thai");
+    let recipe_id = recipes[0]["recipeId"].as_str().unwrap().to_string();
+    assert_eq!(recipes[0]["recipeName"], "Thai Green Curry");
+    assert_eq!(recipes[0]["path"], "meals/asian/thai");
 
     // Verify content contains expected ingredient
     let app2 = build_router();
@@ -1043,8 +1032,8 @@ async fn test_read_recipe_from_nested_category_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["name"], "Thai Green Curry");
-    assert_eq!(json["category"], "meals/asian/thai");
+    assert_eq!(json["recipeName"], "Thai Green Curry");
+    assert_eq!(json["path"], "meals/asian/thai");
     assert!(json["content"]
         .as_str()
         .unwrap()
@@ -1068,9 +1057,8 @@ async fn test_move_recipe_between_nested_categories_impl(backend: &str) -> TempD
     // Create recipe in one nested category
     let content = load_recipe_fixture("chocolate-cake");
     let create_payload = serde_json::json!({
-        "name": "Chocolate Cake",
         "content": content,
-        "category": "desserts/cakes/chocolate"
+        "path": "desserts/cakes/chocolate"
     });
 
     let response = app1
@@ -1084,7 +1072,7 @@ async fn test_move_recipe_between_nested_categories_impl(backend: &str) -> TempD
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipe_id = json["recipeId"].as_str().unwrap().to_string();
 
     // Verify it exists in original nested category
     verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts/cakes/chocolate");
@@ -1092,7 +1080,7 @@ async fn test_move_recipe_between_nested_categories_impl(backend: &str) -> TempD
     // Move to different nested category
     let app2 = build_router();
     let update_payload = serde_json::json!({
-        "category": "desserts/cakes/dark-chocolate"
+        "path": "desserts/cakes/dark-chocolate"
     });
 
     let response = app2
@@ -1108,7 +1096,7 @@ async fn test_move_recipe_between_nested_categories_impl(backend: &str) -> TempD
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(json["category"], "desserts/cakes/dark-chocolate");
+    assert_eq!(json["path"], "desserts/cakes/dark-chocolate");
 
     // Verify file moved to new nested category
     verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts/cakes/dark-chocolate");
@@ -1160,7 +1148,7 @@ async fn test_get_recipes_from_nested_category_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    assert_eq!(json["category"], "meals/asian/thai");
+    assert_eq!(json["path"], "meals/asian/thai");
     assert_eq!(json["count"], 2);
 
     let recipes = json["recipes"].as_array().unwrap();
@@ -1168,7 +1156,7 @@ async fn test_get_recipes_from_nested_category_impl(backend: &str) {
 
     let names: Vec<String> = recipes
         .iter()
-        .map(|r| r["name"].as_str().unwrap().to_string())
+        .map(|r| r["recipeName"].as_str().unwrap().to_string())
         .collect();
     assert!(names.contains(&"Pad Thai".to_string()));
     assert!(names.contains(&"Green Curry".to_string()));
@@ -1191,9 +1179,8 @@ async fn test_move_recipe_between_flat_and_nested_category_impl(backend: &str) -
     // Create recipe in flat category
     let content = load_recipe_fixture("vanilla-cake");
     let create_payload = serde_json::json!({
-        "name": "Vanilla Cake",
         "content": content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app1
@@ -1207,7 +1194,7 @@ async fn test_move_recipe_between_flat_and_nested_category_impl(backend: &str) -
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipe_id = json["recipeId"].as_str().unwrap().to_string();
 
     // Verify in flat category
     verify_recipe_file_exists(&temp_dir, "Vanilla Cake", "desserts");
@@ -1215,7 +1202,7 @@ async fn test_move_recipe_between_flat_and_nested_category_impl(backend: &str) -
     // Move to nested category
     let app2 = build_router();
     let update_payload = serde_json::json!({
-        "category": "desserts/cakes/vanilla"
+        "path": "desserts/cakes/vanilla"
     });
 
     let response = app2
@@ -1231,7 +1218,7 @@ async fn test_move_recipe_between_flat_and_nested_category_impl(backend: &str) -
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(json["category"], "desserts/cakes/vanilla");
+    assert_eq!(json["path"], "desserts/cakes/vanilla");
 
     // Verify moved to nested category
     verify_recipe_file_exists(&temp_dir, "Vanilla Cake", "desserts/cakes/vanilla");
@@ -1307,9 +1294,8 @@ async fn test_move_between_different_category_structures_impl(backend: &str) {
     // Create recipe in one category structure
     let content = load_recipe_fixture("authors-dinner");
     let create_payload = serde_json::json!({
-        "name": "Author's Dinner",
         "content": content,
-        "category": "author1/dinner/meat"
+        "path": "author1/dinner/meat"
     });
 
     let response = app1
@@ -1325,14 +1311,14 @@ async fn test_move_between_different_category_structures_impl(backend: &str) {
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    let recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let recipe_id = json["recipeId"].as_str().unwrap().to_string();
 
-    assert_eq!(json["category"], "author1/dinner/meat");
+    assert_eq!(json["path"], "author1/dinner/meat");
 
     // Move to completely different category structure
     let app2 = build_router();
     let update_payload = serde_json::json!({
-        "category": "author2/meat/dinner"
+        "path": "author2/meat/dinner"
     });
 
     let response = app2
@@ -1350,8 +1336,8 @@ async fn test_move_between_different_category_structures_impl(backend: &str) {
     let json: Value = serde_json::from_str(&body).unwrap();
 
     // Verify category updated to new structure
-    assert_eq!(json["category"], "author2/meat/dinner");
-    assert_eq!(json["name"], "Author's Dinner");
+    assert_eq!(json["path"], "author2/meat/dinner");
+    assert_eq!(json["recipeName"], "Author's Dinner");
 }
 
 #[tokio::test]
@@ -1375,9 +1361,8 @@ async fn test_create_recipe_missing_yaml_front_matter_impl(backend: &str) {
     // Content without YAML front matter (no title field)
     let content = "---\ndescription: This is just a description\n---\n\nNo title provided.";
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -1389,7 +1374,12 @@ async fn test_create_recipe_missing_yaml_front_matter_impl(backend: &str) {
     assert_eq!(response.status(), axum::http::StatusCode::BAD_REQUEST);
 
     let body = extract_response_body(response).await;
-    assert!(body.to_lowercase().contains("invalid"));
+    // Error message should mention title or front matter
+    assert!(
+        body.to_lowercase().contains("title") || body.to_lowercase().contains("front matter"),
+        "Error body: {}",
+        body
+    );
 }
 
 #[tokio::test]
@@ -1409,9 +1399,8 @@ async fn test_create_recipe_with_valid_yaml_front_matter_impl(backend: &str) {
     // Content with valid YAML front matter including title
     let content = "---\ntitle: Chocolate Cake\ndescription: Rich chocolate cake\n---\n\nMix flour with cocoa.";
     let payload = serde_json::json!({
-        "name": "Test Recipe",
         "content": content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -1425,9 +1414,9 @@ async fn test_create_recipe_with_valid_yaml_front_matter_impl(backend: &str) {
     let json: Value = serde_json::from_str(&body).unwrap();
 
     // The name in the response should be from YAML title, not the request name
-    assert_eq!(json["name"], "Chocolate Cake");
-    assert_eq!(json["category"], "desserts");
-    assert!(json["recipe_id"].is_string());
+    assert_eq!(json["recipeName"], "Chocolate Cake");
+    assert_eq!(json["path"], "desserts");
+    assert!(json["recipeId"].is_string());
 
     // Verify file was created with name derived from title
     let filename = verify_recipe_file_exists(&temp_dir, "Chocolate Cake", "desserts");
@@ -1454,9 +1443,8 @@ async fn test_update_recipe_title_causes_filename_change_impl(backend: &str) {
     // Step 1: Create initial recipe
     let initial_content = "---\ntitle: Brownie\n---\n\nChocolate brownie recipe.";
     let payload = serde_json::json!({
-        "name": "Brownie",
         "content": initial_content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -1469,7 +1457,7 @@ async fn test_update_recipe_title_causes_filename_change_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    let recipe_id = json["recipe_id"].as_str().unwrap();
+    let recipe_id = json["recipeId"].as_str().unwrap();
     let initial_filename = "brownie.cook";
 
     // Verify initial file exists
@@ -1497,8 +1485,8 @@ async fn test_update_recipe_title_causes_filename_change_impl(backend: &str) {
     let json: Value = serde_json::from_str(&body).unwrap();
 
     // Name should be updated to new title
-    assert_eq!(json["name"], "Fudgy Brownie");
-    let new_recipe_id = json["recipe_id"].as_str().unwrap();
+    assert_eq!(json["recipeName"], "Fudgy Brownie");
+    let new_recipe_id = json["recipeId"].as_str().unwrap();
 
     // recipe_id should change (because git_path changed)
     assert_ne!(recipe_id, new_recipe_id);
@@ -1543,9 +1531,8 @@ async fn test_id_change_on_rename_scenario_impl(backend: &str) {
     // Step 1: Create recipe with initial title
     let initial_content = "---\ntitle: Chocolate Cake\n---\n\nSimple chocolate cake.";
     let payload = serde_json::json!({
-        "name": "Chocolate Cake",
         "content": initial_content,
-        "category": "desserts"
+        "path": "desserts"
     });
 
     let response = app
@@ -1558,7 +1545,7 @@ async fn test_id_change_on_rename_scenario_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    let initial_recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let initial_recipe_id = json["recipeId"].as_str().unwrap().to_string();
     println!("Initial recipe ID: {}", initial_recipe_id);
 
     // Step 2: Update recipe content with new title
@@ -1582,12 +1569,12 @@ async fn test_id_change_on_rename_scenario_impl(backend: &str) {
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
 
-    let new_recipe_id = json["recipe_id"].as_str().unwrap().to_string();
+    let new_recipe_id = json["recipeId"].as_str().unwrap().to_string();
     println!("New recipe ID: {}", new_recipe_id);
 
     // Verify recipe_id changed
     assert_ne!(initial_recipe_id, new_recipe_id);
-    assert_eq!(json["name"], "Dark Chocolate Cake");
+    assert_eq!(json["recipeName"], "Dark Chocolate Cake");
 
     // Step 3: Try to access with old recipe_id - should return 404
     let response = app
@@ -1618,7 +1605,7 @@ async fn test_id_change_on_rename_scenario_impl(backend: &str) {
 
     let body = extract_response_body(response).await;
     let json: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(json["name"], "Dark Chocolate Cake");
+    assert_eq!(json["recipeName"], "Dark Chocolate Cake");
 }
 
 #[tokio::test]

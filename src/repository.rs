@@ -122,7 +122,7 @@ impl RecipeRepository {
     /// Create a new recipe with optional author and comment
     pub async fn create_with_author_and_comment(
         &self,
-        name: &str,
+        _name: &str,
         content: &str,
         category: Option<&str>,
         _author: Option<&str>,
