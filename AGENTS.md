@@ -4,7 +4,7 @@ This document provides coding conventions, project structure, and common command
 
 ## Project Overview
 
-A self-hosted backend service for managing CookLang recipe files. CookLang is a markup language for recipes that makes them easy to read, write, and parse.
+A self-hosted service for managing Cooklang recipe files. Cooklang is a markup language for recipes that makes them easy to read, write, and parse.
 
 **Target Audience**: Users self-hosting for themselves and their family.
 
@@ -27,7 +27,7 @@ A self-hosted backend service for managing CookLang recipe files. CookLang is a 
 
 **Selected**:
 - Language: **Rust** (use official `cooklang-rs` parser library)
-- Parser: **cooklang-rs** (canonical CookLang parser from cooklang.org)
+- Parser: **cooklang-rs** (canonical Cooklang parser from cooklang.org)
 - Caching: **In-memory (DashMap)** (fast, volatile, rebuilt from git on startup)
 - API: **REST** (simple, well-understood)
 - Storage: **Git repository** for recipe files + in-memory cache for search/index
@@ -189,7 +189,7 @@ Failure to update all three files will cause documentation drift and confusion f
 | **docs/API.md** | When adding API endpoints or documenting API changes | REST API endpoint documentation with examples |
 | **docs/openapi.yaml** | When viewing/updating machine-readable API spec or importing into Swagger UI | Complete OpenAPI 3.0 specification of all endpoints, schemas, and responses |
 | **docs/postman-collection.json** | When manually testing API endpoints or sharing testing tools | Postman collection with all endpoints, test requests, and environment variables |
-| **docs/SAMPLE-RECIPES.md** | When testing API with realistic data or documenting CookLang examples | 5+ sample recipes in CookLang format with curl/Postman testing instructions |
+| **docs/SAMPLE-RECIPES.md** | When testing API with realistic data or documenting Cooklang examples | 5+ sample recipes in Cooklang format with curl/Postman testing instructions |
 | **PROJECT_PLAN.md** | Before starting ANY work | Current project phase, completed milestones, architectural decisions, technical debt |
 | **README.md** | When updating installation, quick start, or project status | Quick start guide, project status, feature list, deployment instructions |
 
@@ -267,7 +267,7 @@ Failure to update all three files will cause documentation drift and confusion f
    - Add new API testing scenarios that aren't covered by existing samples
    - Update example recipes or curl commands if behavior changes
    - Change testing procedures
-   - Add new CookLang syntax examples
+   - Add new Cooklang syntax examples
 
 ### Documentation Update Rule
 
@@ -291,7 +291,7 @@ After implementing ANY feature or making significant changes:
 
 **Why this matters**: Users rely on Postman collection and API.md for integration. OpenAPI is machine-readable. Outdated docs cause wasted debugging time and frustration.
 
-## CookLang Specification
+## Cooklang Specification
 
 Reference: https://cooklang.org/docs/spec/
 

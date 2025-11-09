@@ -92,8 +92,8 @@ If you see "port is already allocated" error:
 
 ```bash
 # Stop any existing containers
-docker stop cooklang-backend-test-* 2>/dev/null || true
-docker rm cooklang-backend-test-* 2>/dev/null || true
+docker stop cooklang-store-test-* 2>/dev/null || true
+docker rm cooklang-store-test-* 2>/dev/null || true
 
 # Try again
 ./scripts/docker-test.sh
@@ -104,9 +104,9 @@ docker rm cooklang-backend-test-* 2>/dev/null || true
 If tests fail because the API didn't start:
 
 1. Check Docker is running: `docker ps`
-2. Check image builds: `docker build -t cooklang-backend-test .`
-3. Run container manually: `docker run -p 3000:3000 cooklang-backend-test`
-4. Check logs: `docker logs cooklang-backend-test`
+2. Check image builds: `docker build -t cooklang-store-test .`
+3. Run container manually: `docker run -p 3000:3000 cooklang-store-test`
+4. Check logs: `docker logs cooklang-store-test`
 
 ### Git Configuration Missing
 

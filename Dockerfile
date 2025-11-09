@@ -34,7 +34,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from builder
-COPY --from=builder /app/target/release/cooklang-backend /usr/local/bin/cooklang-backend
+COPY --from=builder /app/target/release/cooklang-store /usr/local/bin/cooklang-store
 
 # Create directories for data
 RUN mkdir -p /data/recipes
@@ -49,4 +49,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["cooklang-backend"]
+CMD ["cooklang-store"]

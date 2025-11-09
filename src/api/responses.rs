@@ -14,7 +14,7 @@ pub struct RecipeResponse {
     pub description: Option<String>,
     /// Optional category
     pub category: Option<String>,
-    /// Full recipe content in CookLang format
+    /// Full recipe content in Cooklang format
     pub content: String,
 }
 

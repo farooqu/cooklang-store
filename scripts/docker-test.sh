@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 TEST_REPO_DIR="/tmp/cooklang-test-recipes-$$"
-CONTAINER_NAME="cooklang-backend-test-$$"
+CONTAINER_NAME="cooklang-store-test-$$"
 TIMEOUT=30
 API_BASE="http://localhost:3000/api/v1"
 
@@ -81,7 +81,7 @@ run_test() {
 }
 
 main() {
-    echo -e "${GREEN}CookLang Backend Docker Integration Tests${NC}"
+    echo -e "${GREEN}Cooklang Store Docker Integration Tests${NC}"
     echo ""
     
     # Create test repo directory
@@ -124,7 +124,7 @@ EOF
     
     # Build Docker image
     echo -e "${YELLOW}Building Docker image...${NC}"
-    docker build -t cooklang-backend-test . -q
+    docker build -t cooklang-store-test . -q
     echo -e "${GREEN}Docker image built${NC}"
     echo ""
     
@@ -136,7 +136,7 @@ EOF
         -v "$TEST_REPO_DIR:/data/recipes" \
         -e RUST_LOG=info \
         -e RECIPES_PATH=/data/recipes \
-        cooklang-backend-test
+        cooklang-store-test
     
     echo -e "${GREEN}Container started${NC}"
     echo ""

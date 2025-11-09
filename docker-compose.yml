@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  cooklang-backend:
+  cooklang-store:
     build: .
-    container_name: cooklang-backend
+    container_name: cooklang-store
     ports:
       - "3000:3000"
     volumes:

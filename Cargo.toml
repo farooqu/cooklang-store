@@ -1,5 +1,5 @@
 [package]
-name = "cooklang-backend"
+name = "cooklang-store"
 version = "0.1.0"
 edition = "2021"
 
@@ -21,7 +21,7 @@ serde_json = "1.0"
 # In-memory caching
 dashmap = "5.5"
 
-# CookLang parser
+# Cooklang parser
 cooklang = "0.6"
 
 # Git operations

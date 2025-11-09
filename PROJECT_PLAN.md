@@ -1,4 +1,4 @@
-# CookLang Backend - Project Plan
+# Cooklang Store - Project Plan
 
 **Status**: Phase 3 Complete, Phase 4 in Progress (Nov 9, 2025)
 

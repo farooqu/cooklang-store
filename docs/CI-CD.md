@@ -1,6 +1,6 @@
 # CI/CD Pipeline
 
-CookLang Backend uses GitHub Actions for continuous integration and continuous deployment. All workflows run on GitHub-hosted runners (Ubuntu latest) at no additional cost.
+Cooklang Store uses GitHub Actions for continuous integration and continuous deployment. All workflows run on GitHub-hosted runners (Ubuntu latest) at no additional cost.
 
 ## Workflow Overview
 
@@ -102,8 +102,8 @@ act -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
 Add to your README to display pipeline status:
 
 ```markdown
-[![Rust Tests](https://github.com/YOUR_USERNAME/cooklang-backend/actions/workflows/rust-tests.yml/badge.svg)](https://github.com/YOUR_USERNAME/cooklang-backend/actions/workflows/rust-tests.yml)
-[![Docker Build](https://github.com/YOUR_USERNAME/cooklang-backend/actions/workflows/docker-build.yml/badge.svg)](https://github.com/YOUR_USERNAME/cooklang-backend/actions/workflows/docker-build.yml)
+[![Rust Tests](https://github.com/YOUR_USERNAME/cooklang-store/actions/workflows/rust-tests.yml/badge.svg)](https://github.com/YOUR_USERNAME/cooklang-store/actions/workflows/rust-tests.yml)
+[![Docker Build](https://github.com/YOUR_USERNAME/cooklang-store/actions/workflows/docker-build.yml/badge.svg)](https://github.com/YOUR_USERNAME/cooklang-store/actions/workflows/docker-build.yml)
 ```
 
 ## Caching

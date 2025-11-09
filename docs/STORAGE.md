@@ -2,7 +2,7 @@
 
 ## Overview
 
-The CookLang Backend supports two storage modes for recipe files:
+The Cooklang Store supports two storage modes for recipe files:
 
 1. **Disk Storage** (Default) - Simple, fast, no version history
 2. **Git Storage** (Optional) - Version-tracked, collaboration-friendly

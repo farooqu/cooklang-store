@@ -1,6 +1,6 @@
 # Sample Recipes for Testing
 
-This document contains sample recipes that can be used to test the CookLang Backend API.
+This document contains sample recipes that can be used to test the Cooklang Store API.
 
 ## How to Use
 
@@ -236,7 +236,7 @@ Get categories:
 curl http://localhost:3000/api/v1/categories
 ```
 
-## CookLang Syntax Reference
+## Cooklang Syntax Reference
 
 - **Ingredients**: `@ingredient{quantity%unit}` or just `@ingredient{quantity}`
 - **Cookware**: `#cookware` (marks items needed for cooking)
@@ -244,4 +244,4 @@ curl http://localhost:3000/api/v1/categories
 - **Metadata**: Lines starting with `>>` at the beginning of file
 - **Comments**: `-- comment` or `[- comment -]`
 
-For the complete CookLang specification, see: https://cooklang.org/docs/spec/
+For the complete Cooklang specification, see: https://cooklang.org/docs/spec/

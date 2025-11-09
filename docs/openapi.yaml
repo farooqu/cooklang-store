@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: CookLang Backend API
-  description: RESTful API for managing CookLang recipes stored in git
+  title: Cooklang Store API
+  description: RESTful API for managing Cooklang recipes stored in git
   version: 0.1.0
   contact:
-    name: CookLang Backend
-    url: https://github.com/yourusername/cooklang-backend
+    name: Cooklang Store
+    url: https://github.com/yourusername/cooklang-store
   license:
     name: TBD
 
@@ -319,7 +319,7 @@ components:
           example: desserts
         content:
           type: string
-          description: Full recipe content in CookLang format
+          description: Full recipe content in Cooklang format
           example: "# Chocolate Cake\n\n@flour{2%cups} @sugar{1%cup}"
 
     RecipeSummary:
@@ -374,7 +374,7 @@ components:
           example: Pasta Carbonara
         content:
           type: string
-          description: Recipe content in CookLang format (required, non-empty)
+          description: Recipe content in Cooklang format (required, non-empty)
           example: "# Pasta Carbonara\n\n@eggs{4} @bacon{200%g}"
         category:
           type: string
@@ -402,7 +402,7 @@ components:
           example: Updated Recipe Name
         content:
           type: string
-          description: New recipe content in CookLang format
+          description: New recipe content in Cooklang format
           example: "# Updated Recipe\n\n@ingredient{1%unit}"
         category:
           type: string

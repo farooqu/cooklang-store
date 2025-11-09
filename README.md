@@ -1,8 +1,8 @@
-# CookLang Recipe Backend
+# Cooklang Recipe Store
 
-A backend service for managing, storing, and serving CookLang recipe files.
+A service for managing, storing, and serving Cooklang recipe files.
 
-## What is CookLang?
+## What is Cooklang?
 
 CookLang is a markup language for writing recipes that makes them easy to read for humans and easy to parse for computers. It uses simple syntax to denote ingredients, cookware, timers, and cooking steps.
 
@@ -34,7 +34,7 @@ Learn more at [cooklang.org](https://cooklang.org)
 ## Goals
 
 - Provide a RESTful API for recipe management
-- Parse and validate CookLang recipe files (using official `cooklang-rs`)
+- Parse and validate Cooklang recipe files (using official `cooklang-rs`)
 - Store recipes in git repository for version control
 - Support recipe search, filtering, and tagging
 - Enable recipe scaling and shopping list generation
@@ -56,7 +56,7 @@ The easiest way to get started is using VSCode DevContainers:
 2. Clone and open the repository:
    ```bash
    git clone <your-repo-url>
-   cd cooklang-backend
+   cd cooklang-store
    code .
    ```
 3. VSCode will prompt to "Reopen in Container" - click it
@@ -75,7 +75,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
 git clone <your-repo-url>
-cd cooklang-backend
+cd cooklang-store
 cargo run
 
 # Run tests

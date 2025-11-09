@@ -16,7 +16,7 @@ pub fn init_repo(path: &Path) -> Result<Repository> {
 
 /// Get or create the default git signature for commits
 fn get_default_signature() -> Result<Signature<'static>> {
-    Signature::now("CookLang Backend", "backend@cooklang.local")
+    Signature::now("Cooklang Store", "store@cooklang.local")
         .context("Failed to create git signature")
 }
 

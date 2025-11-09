@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "cooklang-backend-api",
-    "name": "CookLang Backend API",
-    "description": "Collection for testing CookLang Backend REST API endpoints",
+    "_postman_id": "cooklang-store-api",
+    "name": "Cooklang Store API",
+    "description": "Collection for testing Cooklang Store REST API endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

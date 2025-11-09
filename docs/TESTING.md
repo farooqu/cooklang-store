@@ -2,7 +2,7 @@
 
 ## Overview
 
-CookLang Backend includes comprehensive testing at multiple levels:
+Cooklang Store includes comprehensive testing at multiple levels:
 
 1. **Rust Integration Tests** - Full API testing in development environment
 2. **Docker Integration Tests** - Deployment-level smoke tests

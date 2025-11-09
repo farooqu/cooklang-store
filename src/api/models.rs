@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct CreateRecipeRequest {
     /// Recipe name
     pub name: String,
-    /// Recipe content in CookLang format
+    /// Recipe content in Cooklang format
     pub content: String,
     /// Optional category for the recipe
     pub category: Option<String>,

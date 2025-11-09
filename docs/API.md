@@ -1,8 +1,8 @@
-# CookLang Backend API Documentation
+# Cooklang Store API Documentation
 
 ## Overview
 
-The CookLang Backend API provides RESTful endpoints for managing recipes stored in a git repository. All recipes are stored as `.cook` files and tracked in git for version history and collaboration.
+The Cooklang Store API provides RESTful endpoints for managing recipes stored in a git repository. All recipes are stored as `.cook` files and tracked in git for version history and collaboration.
 
 ## API Version
 
@@ -88,7 +88,7 @@ The CookLang Backend API provides RESTful endpoints for managing recipes stored 
 - **Validation**:
   - `name` is required and cannot be empty
   - `content` is required and cannot be empty
-  - Must be valid CookLang format
+  - Must be valid Cooklang format
 
 #### List Recipes
 - **URL**: `/api/v1/recipes`
